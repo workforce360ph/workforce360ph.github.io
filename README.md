@@ -6,3 +6,5 @@ Mobile-first attendance, performance, productivity, coaching and recognition pla
 - **Website:** landing page in `/docs`, web app in `/docs/app` (GitHub Pages → branch `main`, folder `/docs`). It can be installed from Chrome with *Add to Home screen*.
 
 Clock in/out uses selfie + liveness, GPS geofence, or a rotating QR code. Data is stored on the device only (demo).
+
+**Live site:** https://workforce360ph.github.io · **Web app:** https://workforce360ph.github.io/app/ · **Latest APK:** https://github.com/workforce360ph/workforce360ph.github.io/releases/latest/download/Workforce360.apk

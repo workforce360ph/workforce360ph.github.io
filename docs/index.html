@@ -175,7 +175,7 @@ footer a{color:#cbd5e1}
   <h1>Know who's working, how they're doing, and <span>who needs help</span> — every branch, every day.</h1>
   <p class="lead">WorkForce360 puts attendance, daily targets, KPI scorecards, coaching and recognition in one app. Employees clock in with a selfie, GPS and a liveness check. Managers see everything live.</p>
   <div class="ctas">
-   <a class="btn primary" href="https://github.com/ajcajandab-png/workforce360/releases/latest/download/Workforce360.apk">⬇ Download for Android</a>
+   <a class="btn primary" href="https://github.com/workforce360ph/workforce360ph.github.io/releases/latest/download/Workforce360.apk">⬇ Download for Android</a>
    <a class="btn ghost" href="app/">Try the web app →</a>
   </div>
   <div class="note">Free demo with sample data · Switch between Employee, Supervisor, Manager, HR, Admin and Executive views</div>
@@ -296,7 +296,7 @@ footer a{color:#cbd5e1}
   <div>
    <h2>Download WorkForce360 <span class="ver" id="ver">Android</span></h2>
    <p>Try the full app with sample data. Switch roles with <b>View as</b> to see what each person sees.</p>
-   <div class="ctas"><a class="btn light" href="https://github.com/ajcajandab-png/workforce360/releases/latest/download/Workforce360.apk">⬇ Download APK</a><a class="btn ghost" style="background:transparent;color:#fff;border-color:#ffffff66" href="app/">Open web app</a></div>
+   <div class="ctas"><a class="btn light" href="https://github.com/workforce360ph/workforce360ph.github.io/releases/latest/download/Workforce360.apk">⬇ Download APK</a><a class="btn ghost" style="background:transparent;color:#fff;border-color:#ffffff66" href="app/">Open web app</a></div>
    <ol><li>Tap <b>Download APK</b> on your Android phone.</li><li>Open the downloaded file. If asked, allow <b>Install unknown apps</b>.</li><li>Open WorkForce360 and allow camera and location.</li><li>On iPhone or computer, use the <b>web app</b> — add it to your home screen.</li></ol>
   </div>
   <div class="qrbox"><div id="qr">Scan to download</div><small>Scan with your Android phone's camera</small></div>
@@ -340,9 +340,9 @@ const CONTACT={email:'',phone:'',facebook:''};
  else if(CONTACT.facebook)cta.href=CONTACT.facebook;
 })();
 // QR to the APK
-try{const q=qrcode(0,'M');q.addData('https://github.com/ajcajandab-png/workforce360/releases/latest/download/Workforce360.apk');q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){}
+try{const q=qrcode(0,'M');q.addData('https://github.com/workforce360ph/workforce360ph.github.io/releases/latest/download/Workforce360.apk');q.make();document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){}
 // latest version label
-fetch('https://api.github.com/repos/ajcajandab-png/workforce360/releases/latest').then(r=>r.json()).then(d=>{if(d.tag_name)document.getElementById('ver').textContent='Android · '+d.tag_name}).catch(()=>{});
+fetch('https://api.github.com/repos/workforce360ph/workforce360ph.github.io/releases/latest').then(r=>r.json()).then(d=>{if(d.tag_name)document.getElementById('ver').textContent='Android · '+d.tag_name}).catch(()=>{});
 // lightbox
 document.querySelectorAll('.shot').forEach(i=>i.addEventListener('click',()=>{document.getElementById('lbimg').src=i.src;document.getElementById('lb').classList.add('show')}));
 // close mobile menu on click
