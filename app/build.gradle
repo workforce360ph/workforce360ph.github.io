@@ -24,7 +24,7 @@ android {
         release { minifyEnabled false; signingConfig signingConfigs.demo }
         debug { signingConfig signingConfigs.demo }
     }
-    sourceSets { main { assets.srcDirs = ['../docs'] } }
+    sourceSets { main { assets.srcDirs = ['../docs/app'] } }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
