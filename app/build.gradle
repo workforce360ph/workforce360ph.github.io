@@ -1,0 +1,35 @@
+plugins { id 'com.android.application' }
+
+def runNo = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'com.workforce360.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.workforce360.app'
+        minSdk 24
+        targetSdk 34
+        versionCode runNo
+        versionName "1.0.${runNo}"
+    }
+    signingConfigs {
+        demo {
+            storeFile file('w360-demo.jks')
+            storePassword 'w360demo'
+            keyAlias 'w360'
+            keyPassword 'w360demo'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.demo }
+        debug { signingConfig signingConfigs.demo }
+    }
+    sourceSets { main { assets.srcDirs = ['../docs'] } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError false; checkReleaseBuilds false }
+}
+
+dependencies { implementation 'androidx.webkit:webkit:1.11.0' }
