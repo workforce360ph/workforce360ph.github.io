@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Workforce360 — Attendance & Performance Monitoring</title>
+<title>WorkForce360 by Jessie Cajandab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="lib/chart.umd.js"></script>
@@ -245,11 +245,18 @@ const AWARDS={'Employee of the Month':['🏆',100],'Perfect Attendance':['⏱️
 const AVC=['#0f766e','#0891b2','#16a34a','#d97706','#db2777','#7c3aed','#4f46e5','#ea580c','#2563eb','#65a30d','#c026d3','#475569','#be123c','#0369a1','#a16207','#334155'];
 const VMODES={selfie:'Selfie + GPS + liveness',qr:'QR code + GPS (selfie for field/WFH)',gps:'GPS only'};
 
+/* ===================== branches ===================== */
+const SAMPLE_SITES=()=>[{id:'main',name:'Main Office – Cebu IT Park',lat:10.3302,lng:123.9058,radius:150},{id:'mandaue',name:'Mandaue Branch',lat:10.3236,lng:123.9440,radius:150},{id:'talisay',name:'Talisay Branch',lat:10.2447,lng:123.8494,radius:150}];
+const SITE_OF={e4:'main',e5:'main',e6:'mandaue',e7:'mandaue',e8:'talisay',e9:'main',e10:'mandaue',e11:'main',e12:'main',e13:'main',e14:'mandaue'};
+const sites=()=>D.settings.sites;
+const siteBy=id=>sites().find(x=>x.id===id)||sites()[0];
+const homeSite=e=>siteBy(e.site);
+const allowedSites=e=>e.anySite?sites():[homeSite(e)];
 /* ===================== demo data ===================== */
 function seed(){
  const R=mulberry32(11);const Y=TODAY.getFullYear();
  const settings={company:'Your Company Inc.',brand:'#0f766e',grace:10,otMin:30,wAtt:30,wKpi:40,wTask:30,vl:15,sl:15,
-  officeName:'Main Office',lat:10.3302,lng:123.9058,radius:150,strict:false,verifyMode:'selfie',retention:90,qrSecret:uid()+uid(),
+  officeName:'Main Office',lat:10.3302,lng:123.9058,radius:150,sites:SAMPLE_SITES(),strict:false,verifyMode:'selfie',retention:90,qrSecret:uid()+uid(),
   alMissed:true,alApprovals:true,alTargets:true,alOverdue:true,
   shifts:[{id:'reg',name:'Regular',start:'08:00',end:'17:00',brk:60},{id:'mid',name:'Mid',start:'10:00',end:'19:00',brk:60},{id:'close',name:'Closing',start:'12:00',end:'21:00',brk:60}]};
  const holidays=[[`${Y}-11-01`,"All Saints' Day"],[`${Y}-11-30`,'Bonifacio Day'],[`${Y}-12-08`,'Feast of the Immaculate Conception'],[`${Y}-12-24`,'Christmas Eve'],[`${Y}-12-25`,'Christmas Day'],[`${Y}-12-30`,'Rizal Day'],[`${Y}-12-31`,'Last Day of the Year'],[`${Y+1}-01-01`,"New Year's Day"]].map(([date,name])=>({date,name}));
@@ -278,7 +285,7 @@ function seed(){
  const emps=E.map(([id,name,position,dept,role,mgr,rl,pf,shift,restDay,empType],i)=>({id,name,position,dept,role,mgr,rl,pf,shift,restDay,empType,location:'Main Office',
   email:name.toLowerCase().replace(/[^a-z ]/g,'').split(' ')[0]+'@company.ph',
   phone:'0917 '+String(1000000+Math.floor(R()*8999999)).replace(/(\d{3})(\d{4})/,'$1 $2'),
-  hired:rel(-(240+i*71)),status:'Active',color:AVC[i%AVC.length]}));
+  hired:rel(-(240+i*71)),status:'Active',color:AVC[i%AVC.length],site:SITE_OF[id]||'main',anySite:!SITE_OF[id]||id==='e12'||role!=='employee'}));
  const shiftBy=id=>settings.shifts.find(s=>s.id===id);
  const att={};const hol=new Set(holidays.map(h=>h.date));
  for(const e of emps){
@@ -293,7 +300,7 @@ function seed(){
    const bs=st+240+Math.floor(R()*40),bl=45+Math.floor(R()*35);
    let mode='Office';if(e.id==='e12'&&R()<.65)mode='Field';else if(e.id==='e11'&&d.getDay()===6)mode='WFH';else if(e.dept==='Sales'&&R()<.04)mode='Field';
    const off=mode==='Office'&&R()<(1-e.rl)*.25;
-   const vv=()=>({live:true,method:'live',fence:mode!=='Office'?'remote':off?'out':'in',dist:off?400+Math.floor(R()*2600):5+Math.floor(R()*110),acc:8+Math.floor(R()*20)});
+   const vv=()=>({live:true,method:'live',site:(SAMPLE_SITES().find(x=>x.id===(SITE_OF[e.id]||'main'))||{}).name,fence:mode!=='Office'?'remote':off?'out':'in',dist:off?400+Math.floor(R()*2600):5+Math.floor(R()*110),acc:8+Math.floor(R()*20)});
    const rec={in:toT(inM),out:toT(outM),mode,breaks:[{s:toT(bs),e:toT(bs+bl)}],vin:vv(),vout:vv()};
    if((e.id==='e5'||e.id==='e10')&&R()<.06){delete rec.out;delete rec.vout}
    att[key]=rec;
@@ -383,6 +390,9 @@ function log(action,detail){D.audit.unshift({at:new Date().toISOString(),user:S.
 const KCATS=['Productivity','Quality','Target achievement','Attendance','Compliance','Customer','Other'];
 function guessCat(n){n=n.toLowerCase();return/compli/.test(n)?'Compliance':/quality|accura|satisf/.test(n)?'Quality':/on-time|on time|processing|achievement/.test(n)?'Target achievement':/attend/.test(n)?'Attendance':/customer/.test(n)?'Customer':'Productivity'}
 const KDESC={'Sales vs Target':'Total sales booked this month (₱), from POS / sales report','Units Sold':'Number of units sold this month','Quality / Customer Satisfaction':'Average customer survey score (%)','Upsell / Attach Rate':'% of sales with an add-on (warranty, accessory)','Compliance':'% of audit / policy checklist items passed','Orders Processed':'Orders picked, packed or dispatched this month','Accuracy / Quality':'% of orders released without errors','On-time Completion':'% of orders/tasks completed by the due time','Requests Resolved':'HR/admin requests closed this month','Processing On-time':'% of requests processed within the agreed time'};
+function migrateSites(){const s=D.settings;if(!s.sites){const sm=SAMPLE_SITES();sm[0]={id:'main',name:s.officeName||sm[0].name,lat:+s.lat||sm[0].lat,lng:+s.lng||sm[0].lng,radius:+s.radius||150};s.sites=sm}
+ D.emps.forEach(e=>{if(!e.site)e.site=SITE_OF[e.id]||'main';if(e.anySite==null)e.anySite=!SITE_OF[e.id]||e.id==='e12'||e.role!=='employee'})}
+migrateSites();
 function migrateKpi(){const fix=k=>{if(!k.cat)k.cat=guessCat(k.name);if(k.desc==null)k.desc=KDESC[k.name]||''};Object.values(D.kpiT).forEach(L=>L.forEach(fix));Object.values(D.kpis).forEach(L=>L.forEach(fix))}
 migrateKpi();
 /* daily & weekly targets */
@@ -459,7 +469,7 @@ const BANDS=[[95,'Outstanding','green','Recognize / reward'],[85,'Excellent','bl
 const band=v=>{const b=BANDS.find(b=>v>=b[0]);return[b[1],b[2],b[3]]};
 const BC={green:'#16a34a',blue:'#2563eb',teal:'#0d9488',amber:'#d97706',red:'#dc2626'};
 const bandColor=v=>BC[band(v)[1]];
-function unverified(id){let n=0;for(let k=0;k<30;k++){const r=D.att[id+'|'+rel(-k)];if(!r||r.absent)continue;[r.vin,r.vout].forEach(v=>{if(v&&(!v.live||v.fence==='out'||v.fence==='none'))n++})}return n}
+function unverified(id){let n=0;for(let k=0;k<30;k++){const r=D.att[id+'|'+rel(-k)];if(!r||r.absent)continue;[r.vin,r.vout].forEach(v=>{if(v&&(!v.live||v.fence==='out'||v.fence==='none'||v.fence==='other'))n++})}return n}
 function flags(id){
  const a=attSum(id,30),k=kpiScore(id),t=taskStats(id),f=[];
  if(a.late>=4)f.push({t:`${a.late} lates in the last 30 days (${a.lateMin} min)`,issue:'Tardiness',sev:'amber'});
@@ -669,8 +679,8 @@ function pgAttendance(){
  const tab=curTab('daily');const pa=pendingApprovals().length;
  const T=[['daily','Daily log'],['summary','Summary'],['requests',`Requests${pa?' ('+pa+')':''}`],['schedule','Schedule'],['kiosk','QR kiosk']];
  let body='';
- if(tab==='daily'){const L=team();
-  body=`<div class="card"><div class="row" style="margin-bottom:10px"><b>Daily log</b><input type="date" class="inp" value="${S.attDate}" max="${todayStr}" data-chg="attDate"><span class="sp"></span><span class="small muted">Edits are recorded in the audit trail</span></div>
+ if(tab==='daily'){const L=team().filter(e=>!S.attSite||S.attSite==='all'||e.site===S.attSite);
+  body=`<div class="card"><div class="row" style="margin-bottom:10px"><b>Daily log</b><input type="date" class="inp" value="${S.attDate}" max="${todayStr}" data-chg="attDate"><select class="inp" data-chg="attSite"><option value="all">All branches</option>${sites().map(x=>`<option value="${x.id}" ${S.attSite===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select><span class="sp"></span><span class="small muted">Edits are recorded in the audit trail</span></div>
   <div class="tbl"><table><tr><th>Employee</th><th>Status</th><th>Shift</th><th>In</th><th>Out</th><th>Break</th><th>Worked</th><th>Late</th><th>UT</th><th>OT</th><th>In · proof</th><th>Out · proof</th><th></th></tr>
   ${L.map(e=>{const x=day(e.id,S.attDate),k=e.id+'|'+S.attDate;return`<tr><td>${person(e.id)}</td><td>${dayChips(x)}</td><td class="nw small">${x.shift?esc(x.shift.name)+' '+fmt12(x.shift.start):'—'}</td><td class="nw">${fmt12(x.in)}</td><td class="nw">${fmt12(x.out)}</td><td class="nw">${x.brk?x.brk+'m':'—'}</td><td>${x.worked!=null?x.worked.toFixed(1)+'h':'—'}</td><td class="nw">${x.lateMin?x.lateMin+'m':'—'}</td><td class="nw">${x.ut?hm(x.ut):'—'}</td><td class="nw">${x.ot?hm(x.ot):'—'}</td><td>${vCell(x.vin,k,'vin')}</td><td>${vCell(x.vout,k,'vout')}</td><td>${canManage(e.id)&&x.status!=='On Leave'?B('Edit','attEdit',{e:e.id},'sm ghost'):''}</td></tr>`}).join('')}</table></div></div>`}
  else if(tab==='summary'){body=`<div class="card"><h3>30-day attendance summary</h3><div class="tbl"><table><tr><th>Employee</th><th>On time</th><th>Late</th><th>Absent</th><th>Leave</th><th>Field/WFH</th><th>Attendance</th><th>Punctuality</th><th>Late</th><th>Undertime</th><th>OT (approved)</th><th>Missed out</th><th>Avg hrs</th></tr>
@@ -696,11 +706,11 @@ function attEmp(){
  ${tab==='log'?`<div class="card"><div class="tbl"><table><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Break</th><th>Worked</th><th>Late</th><th>UT</th><th>OT</th><th>Proof</th></tr>${rows.map(([d,x])=>`<tr><td class="nw">${fmtDay(d)}</td><td>${dayChips(x)}</td><td class="nw">${fmt12(x.in)}</td><td class="nw">${fmt12(x.out)}</td><td>${x.brk?x.brk+'m':'—'}</td><td>${x.worked!=null?x.worked.toFixed(1)+'h':'—'}</td><td>${x.lateMin?x.lateMin+'m':'—'}</td><td class="nw">${x.ut?hm(x.ut):'—'}</td><td class="nw">${x.ot?hm(x.ot):'—'}</td><td>${vCell(x.vin,u.id+'|'+d,'vin')}</td></tr>`).join('')}</table></div></div>`:tab==='schedule'?scheduleView([u]):reqTable([...D.leaves,...D.reqs].filter(x=>x.emp===u.id))}`;
 }
 /* QR kiosk */
-function qrCode(t){const m=Math.floor(t/60000);let h=2166136261;const s=D.settings.officeName+'|'+m+'|'+D.settings.qrSecret;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return String((h>>>0)%1000000).padStart(6,'0')}
-const qrValid=c=>{c=String(c).replace(/\D/g,'');const n=Date.now();return c===qrCode(n)||c===qrCode(n-60000)};
+function qrCode(t,siteId){const m=Math.floor(t/60000);let h=2166136261;const s=(siteId||S.kioskSite||'main')+'|'+m+'|'+D.settings.qrSecret;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return String((h>>>0)%1000000).padStart(6,'0')}
+const qrValid=c=>{c=String(c).replace(/\D/g,'');const n=Date.now();const s=sites().find(x=>c===qrCode(n,x.id)||c===qrCode(n-60000,x.id));return s||null};
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)&&loadScript[src])return res();const s=document.createElement('script');s.src=src;s.onload=()=>{loadScript[src]=1;res()};s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
-function kioskView(){return`<div class="grid g2"><div class="card kiosk"><h3 style="justify-content:center">🏢 ${esc(D.settings.officeName)} — clock-in QR</h3><div id="kq" class="empty">Loading QR…</div><div class="code" id="kc">------</div><div class="small muted" id="kt"></div></div>
- <div class="card"><h3>How QR clock-in works</h3><div class="list small"><div>1. Open this page on a tablet or monitor at the entrance (Admin/HR/Supervisor login).</div><div>2. Employees tap <b>Clock In</b> on their phone and scan the code — or type the 6 digits.</div><div>3. The code changes every 60 seconds, so a photo of it can't be reused from home.</div><div>4. GPS is still checked against the ${D.settings.radius} m radius.</div><div>Turn on QR mode in <b>Settings → Verification</b>. Current mode: <b>${esc(VMODES[D.settings.verifyMode])}</b>.</div></div></div></div>`}
+function kioskView(){return`<div class="grid g2"><div class="card kiosk"><div class="row" style="justify-content:center;margin-bottom:8px"><select class="inp" data-chg="kioskSite">${sites().map(x=>`<option value="${x.id}" ${x.id===(S.kioskSite||'main')?'selected':''}>🏢 ${esc(x.name)}</option>`).join('')}</select></div><h3 style="justify-content:center">Clock-in QR</h3><div id="kq" class="empty">Loading QR…</div><div class="code" id="kc">------</div><div class="small muted" id="kt"></div></div>
+ <div class="card"><h3>How QR clock-in works</h3><div class="list small"><div>1. Open this page on a tablet or monitor at the entrance (Admin/HR/Supervisor login).</div><div>2. Employees tap <b>Clock In</b> on their phone and scan the code — or type the 6 digits.</div><div>3. The code changes every 60 seconds, so a photo of it can't be reused from home.</div><div>4. Each branch has its own code — put one screen at every branch. GPS is still checked against the branch radius.</div><div>Turn on QR mode in <b>Settings → Verification</b>. Current mode: <b>${esc(VMODES[D.settings.verifyMode])}</b>.</div></div></div></div>`}
 let kioskMin=-1;
 function kioskTick(){const kc=$('#kc');if(!kc)return;const n=Date.now(),m=Math.floor(n/60000);$('#kt').textContent=`Changes in ${60-Math.floor(n/1000)%60}s`;
  if(m===kioskMin)return;kioskMin=m;const code=qrCode(n);kc.textContent=code;
@@ -798,13 +808,13 @@ function pgRecognition(){
 /* ===================== employees ===================== */
 function pgEmployees(){const tab=curTab('dir');const T=isHRA()?D.emps:team();
  return`<div class="row">${tabs([['dir','Directory'],['org','Org chart']],'dir')}<span class="sp"></span>${tab==='dir'?`<input class="inp" style="max-width:300px;flex:1" placeholder="🔍 Search name, position, dept…" data-inp="empSearch">`:''}${isHRA()?B('+ Add employee','empForm'):''}</div>
- ${tab==='dir'?`<div class="grid g3" id="empGrid">${T.map(e=>{const p=prod(e.id);const f=flags(e.id).length;return`<div class="card empcard" data-act="empView" data-e="${e.id}" data-q="${esc((e.name+' '+e.position+' '+e.dept+' '+e.role).toLowerCase())}" style="${e.status!=='Active'?'opacity:.55':''}"><div class="row">${av(e.id,true)}<div style="flex:1;min-width:0"><b style="font-size:15px">${esc(e.name)}</b><div class="small muted">${esc(e.position)} · ${esc(e.dept)}</div><div class="small muted">${ROLES[e.role]} · ${esc(e.empType||'')} · ${e.mgr?'reports to '+esc(emp(e.mgr).name):'top of org'}</div></div></div><div class="row mt8">${e.status!=='Active'?chip(e.status,'gray'):e.role==='executive'?chip('Executive','purple'):scoreChip(p)}${f?chip('🚩 '+f,'red'):''}${pendingAck(e.id)?chip('✍️ '+pendingAck(e.id),'amber'):''}${points(e.id)?chip('⭐ '+points(e.id),'green'):''}</div></div>`}).join('')}</div>`
+ ${tab==='dir'?`<div class="grid g3" id="empGrid">${T.map(e=>{const p=prod(e.id);const f=flags(e.id).length;return`<div class="card empcard" data-act="empView" data-e="${e.id}" data-q="${esc((e.name+' '+e.position+' '+e.dept+' '+e.role).toLowerCase())}" style="${e.status!=='Active'?'opacity:.55':''}"><div class="row">${av(e.id,true)}<div style="flex:1;min-width:0"><b style="font-size:15px">${esc(e.name)}</b><div class="small muted">${esc(e.position)} · ${esc(e.dept)}</div><div class="small muted">🏢 ${esc(shortSite(homeSite(e).name))}${e.anySite?' +all':''} · ${ROLES[e.role]} · ${e.mgr?'reports to '+esc(emp(e.mgr).name):'top of org'}</div></div></div><div class="row mt8">${e.status!=='Active'?chip(e.status,'gray'):e.role==='executive'?chip('Executive','purple'):scoreChip(p)}${f?chip('🚩 '+f,'red'):''}${pendingAck(e.id)?chip('✍️ '+pendingAck(e.id),'amber'):''}${points(e.id)?chip('⭐ '+points(e.id),'green'):''}</div></div>`}).join('')}</div>`
  :`<div class="card org"><ul>${D.emps.filter(e=>!e.mgr&&e.status==='Active').map(e=>orgNode(e.id)).join('')}</ul></div>`}`}
 function orgNode(id){const e=emp(id);const kids=D.emps.filter(x=>x.mgr===id&&x.status==='Active');return`<li><div class="onode" data-act="empView" data-e="${id}">${av(id)}<div><b>${esc(e.name)}</b><small>${esc(e.position)} · ${ROLES[e.role]}</small></div>${kids.length?chip(kids.length,'gray'):''}</div>${kids.length?`<ul>${kids.map(k=>orgNode(k.id)).join('')}</ul>`:''}</li>`}
 function profile(id){const e=emp(id),a=attSum(id),k=kpiScore(id),t=taskStats(id),p=prod(id);const sh=shiftOf(e);
  const recs=D.acc.filter(x=>x.emp===id).sort((a,b)=>b.date.localeCompare(a.date));const g=D.goals.filter(x=>x.emp===id);const aw=D.awards.filter(x=>x.emp===id);
  const canSee=canManage(id)||isExec()||id===S.user;
- return`<div class="row">${av(id,true)}<div style="flex:1"><b style="font-size:18px">${esc(e.name)}</b><div class="muted">${esc(e.position)} · ${esc(e.dept)} · ${ROLES[e.role]}</div><div class="small muted">${esc(e.email)} · ${esc(e.phone)} · ${esc(e.empType||'')} · hired ${fmtDate(e.hired)} · ${esc(e.location||'')}</div><div class="small muted">Shift: ${esc(sh.name)} ${fmt12(sh.start)}–${fmt12(sh.end)} · rest day ${DOW[e.restDay]} · reports to ${e.mgr?esc(emp(e.mgr).name):'—'}</div></div><div style="text-align:center"><div class="score" style="font-size:34px;color:${bandColor(p)}">${r0(p)}</div>${scoreChip(p)}</div></div>
+ return`<div class="row">${av(id,true)}<div style="flex:1"><b style="font-size:18px">${esc(e.name)}</b><div class="muted">${esc(e.position)} · ${esc(e.dept)} · ${ROLES[e.role]}</div><div class="small muted">${esc(e.email)} · ${esc(e.phone)} · ${esc(e.empType||'')} · hired ${fmtDate(e.hired)} · 🏢 ${esc(homeSite(e).name)}${e.anySite?' (any branch)':''}</div><div class="small muted">Shift: ${esc(sh.name)} ${fmt12(sh.start)}–${fmt12(sh.end)} · rest day ${DOW[e.restDay]} · reports to ${e.mgr?esc(emp(e.mgr).name):'—'}</div></div><div style="text-align:center"><div class="score" style="font-size:34px;color:${bandColor(p)}">${r0(p)}</div>${scoreChip(p)}</div></div>
  ${aw.length?`<div class="row mt8">${aw.map(x=>chip((AWARDS[x.type]?.[0]||'🏅')+' '+x.type,'green')).join('')}</div>`:''}
  <div class="grid g4 mt">${stat('Attendance',r0(a.rate)+'%',`${a.late} late · ${a.absent} absent`,'📅')}${stat('KPI',r0(k)+'%',band(k)[0],'📈')}${stat('Tasks',r0(t.rate)+'%',`${t.open} open · ${t.overdue} overdue`,'✅')}${stat('Coaching',recs.length,`${recs.filter(r=>r.status==='Open').length} open`,'🛡️')}</div>
  ${flags(id).length?`<div class="warn mt">🚩 ${flags(id).map(f=>esc(f.t)).join(' · ')}</div>`:''}
@@ -849,9 +859,7 @@ function pgSettings(){const s=D.settings;const adm=role()==='admin';const pre=['
  <div class="card"><h3>🕘 Attendance policy</h3><div class="f2">${fld('Grace period (min)',`<input type="number" min="0" max="60" name="grace" value="${s.grace}">`)}${fld('Count OT after (min past shift end)',`<input type="number" min="0" name="otMin" value="${s.otMin}">`)}</div><div class="f2">${fld('Vacation leave / year',`<input type="number" name="vl" value="${s.vl}">`)}${fld('Sick leave / year',`<input type="number" name="sl" value="${s.sl}">`)}</div>
   <div class="row">${B(`Shifts (${s.shifts.length})`,'shiftEdit',{},'sm ghost')}${B(`Holidays (${D.holidays.length})`,'holEdit',{},'sm ghost')}</div></div>
  <div class="card"><h3>📍 Clock-in verification</h3>${fld('Method',`<select name="verifyMode">${kvOpts(VMODES,s.verifyMode)}</select>`)}
-  <div class="f2">${fld('Work site name',`<input name="officeName" value="${esc(s.officeName)}">`)}${fld('Allowed radius (m)',`<input type="number" min="20" name="radius" value="${s.radius}">`)}</div>
-  <div class="f2">${fld('Latitude',`<input type="number" step="any" name="lat" value="${s.lat}">`)}${fld('Longitude',`<input type="number" step="any" name="lng" value="${s.lng}">`)}</div>
-  <div class="row">${B('📍 Use my current location','officeHere',{},'sm ghost')}<a class="small" href="https://www.google.com/maps?q=${s.lat},${s.lng}" target="_blank" rel="noopener">View on map ↗</a></div>
+  <div class="fld"><label>Branches / work sites (${sites().length})</label>${sites().map(x=>`<div class="flag"><span style="font-size:18px">🏢</span><div class="txt"><b>${esc(x.name)}</b><div class="small muted">${D.emps.filter(e=>e.status==='Active'&&e.site===x.id).length} assigned · radius ${x.radius} m · <a href="https://www.google.com/maps?q=${x.lat},${x.lng}" target="_blank" rel="noopener">map ↗</a></div></div></div>`).join('')}<div class="row mt8">${B('Manage branches','siteEdit',{},'sm')}</div><div class="small muted mt8">Each employee is checked against their <b>home branch</b>. Roving staff (drivers, supervisors, managers) can be allowed at <b>any branch</b> in their profile.</div></div>
   <label class="row mt" style="cursor:pointer;flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" name="strict" ${s.strict?'checked':''}> <span><b>Strict mode</b> — block clock-in unless every check passes. Off = allow but flag for review.</span></label>
   ${fld('Keep selfies for (days)',`<input type="number" min="7" name="retention" value="${s.retention}">`)}<div class="small muted">Location and photo are captured only at clock-in/out — never continuous tracking. Older selfies are deleted automatically.</div></div>
  <div class="card"><h3>📈 KPI templates</h3><div class="small muted" style="margin-bottom:10px">KPI sets and weights per department — change them without redesigning the app.</div>${Object.entries(D.kpiT).map(([d,k])=>`<div class="flag"><div class="txt"><b>${esc(d)}</b><div class="small" style="margin-top:4px">${k.map(x=>`<div style="margin-bottom:4px">${esc(x.name)} <b>${x.w}%</b> <span class="kcat">${esc(x.cat||'')}</span> <span class="muted">· target ${x.unit==='₱'?peso(x.target):x.target+(x.unit==='%'?'%':'')}</span></div>`).join('')}</div></div>${B('Edit','kpiTEdit',{d},'sm ghost')}</div>`).join('')}<div class="mt8">${B('+ Add department','deptNew',{},'sm ghost')}</div></div>
@@ -869,7 +877,7 @@ function render(){
  const badge=v=>{let n=0;if(v==='attendance'&&isMgmt())n=pendingApprovals().length;if(v==='coaching')n=isMgmt()?D.acc.filter(a=>a.status==='Open'&&canManage(a.emp)&&a.follow&&a.follow<todayStr).length:pendingAck(u.id);return n?`<span class="cnt">${n}</span>`:''};
  const grp=r=>D.emps.filter(e=>e.role===r&&e.status==='Active').map(e=>`<option value="${e.id}" ${e.id===u.id?'selected':''}>${esc(e.name)}</option>`).join('');
  const A=alerts();
- $('#root').innerHTML=`<aside class="side ${S.menu?'open':''}"><div class="brandbox"><div class="logo">W360</div><div><b>${esc(D.settings.company)}</b><small>Workforce360</small></div></div>
+ $('#root').innerHTML=`<aside class="side ${S.menu?'open':''}"><div class="brandbox"><div class="logo">W360</div><div><b>${esc(D.settings.company)}</b><small>WorkForce360 by Jessie Cajandab</small></div></div>
  <nav class="nav">${nav.map(v=>`<button type="button" class="${S.view===v?'on':''}" data-act="nav" data-v="${v}"><span class="ic">${NAVS[v][0]}</span>${navLabel(v)}${badge(v)}</button>`).join('')}</nav>
  <div class="sidefoot">Signed in as <b style="color:#e2e8f0">${esc(u.name)}</b><br>${ROLES[u.role]} · ${esc(u.position)}</div></aside><div class="scrim" data-act="menu"></div>
  <main><header class="top"><button type="button" class="ham" data-act="menu">☰</button><h1>${u.role==='employee'&&S.view==='dashboard'?'My Home':TITLES[S.view]}</h1>
@@ -886,29 +894,35 @@ let onSub=null;
 function openModal(title,body,{submit='Save',fn=null,wide=false}={}){stopVerify();onSub=fn;$('#modal').innerHTML=`<div class="mbox ${wide?'wide':''}"><div class="mhead"><h3>${title}</h3><button type="button" class="x" data-act="closeModal">×</button></div><form id="mform">${body}${fn?`<div class="mfoot"><button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn">${submit}</button></div>`:''}</form></div>`;$('#modal').classList.add('show')}
 function closeModal(){stopVerify();$('#modal').classList.remove('show');$('#modal').innerHTML='';onSub=null}
 let RE=null;
-function rowEditor(title,cols,rows,saveFn,extra=''){
+function rowEditor(title,cols,rows,saveFn,extra='',cardExtra=''){
  const ctl=(c,r,i)=>{const v=r[c.k]??c.def??'';if(c.type==='select')return`<select class="inp" style="width:100%" name="${c.k}_${i}">${c.opts.map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return`<option value="${esc(val)}" ${val===v?'selected':''}>${esc(lab)}</option>`}).join('')}</select>`;
   if(c.type==='textarea')return`<textarea class="inp" style="width:100%;min-height:50px" name="${c.k}_${i}" placeholder="${esc(c.ph||'')}">${esc(v)}</textarea>`;
   return`<input class="inp" style="width:100%" type="${c.type||'text'}" step="any" name="${c.k}_${i}" value="${esc(v)}" placeholder="${esc(c.ph||'')}" ${c.opt?'':'required'}>`};
- const rowH=(r,i)=>`<div class="recard" data-i="${i}"><button type="button" class="btn sm ghost rdel" data-act="rowDel" aria-label="Remove">✕</button><div class="rgrid">${cols.map(c=>`<div class="fld ${c.full?'full':''}"><label>${c.label}</label>${ctl(c,r,i)}</div>`).join('')}</div></div>`;
+ const rowH=(r,i)=>`<div class="recard" data-i="${i}"><button type="button" class="btn sm ghost rdel" data-act="rowDel" aria-label="Remove">✕</button><div class="rgrid">${cols.map(c=>`<div class="fld ${c.full?'full':''}"><label>${c.label}</label>${ctl(c,r,i)}</div>`).join('')}</div>${cardExtra}</div>`;
  RE={n:rows.length,rowH};openModal(title,`${extra}<div id="reT">${rows.map(rowH).join('')}</div><button type="button" class="btn sm ghost mt8" data-act="rowAdd">+ Add ${RE.noun||'row'}</button>`,{wide:true,fn:f=>{const out=[...document.querySelectorAll('#reT [data-i]')].map(el=>{const i=el.dataset.i,o={};cols.forEach(c=>o[c.k]=c.type==='number'?+f[c.k+'_'+i]:(f[c.k+'_'+i]??''));return o});return saveFn(out)}})}
 
 /* ===================== verification: selfie + GPS + liveness + QR ===================== */
 let VF=null,faceReady=null;
 function loadFace(){if(faceReady)return faceReady;faceReady=loadScript('lib/face-api.js').then(()=>window.FACE_MODELS?0:loadScript('lib/face-models.js')).then(()=>{const ld=(net,m)=>{const bin=atob(m.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);net.loadFromWeightMap(faceapi.tf.io.decodeWeights(u.buffer,m.specs))};ld(faceapi.nets.tinyFaceDetector,FACE_MODELS.tiny);ld(faceapi.nets.faceLandmark68Net,FACE_MODELS.lm)}).catch(e=>{faceReady=null;throw e});return faceReady}
+function nearestSite(g,list){let best=null;(list||sites()).forEach(s=>{const d=hav(g.lat,g.lng,+s.lat,+s.lng);if(!best||d<best.d)best={s,d}});return best}
+function siteCheck(e,g){const tol=Math.min(g.acc||0,50);const ok=allowedSites(e);const a=nearestSite(g,ok);
+ if(a&&a.d<=(+a.s.radius)+tol)return{fence:'in',site:a.s.name,siteId:a.s.id,dist:a.d};
+ const any=nearestSite(g);if(any&&any.d<=(+any.s.radius)+tol)return{fence:'other',site:any.s.name,siteId:any.s.id,dist:any.d};
+ return{fence:'out',site:a.s.name,siteId:a.s.id,dist:a.d}}
 const hav=(a,b,c,d)=>{const R=6371000,t=x=>x*Math.PI/180;const dl=t(c-a),dn=t(d-b);const h=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))};
 const fmtDist=m=>m>=1000?(m/1000).toFixed(1)+' km':m+' m';
 function getGPS(){return new Promise(res=>{if(!navigator.geolocation)return res({err:'Not supported on this device'});let done=false;const fin=v=>{if(!done){done=true;res(v)}};setTimeout(()=>fin({err:'Timed out'}),15000);
  try{navigator.geolocation.getCurrentPosition(p=>fin({lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy)}),e=>fin({err:e.code===1?'Location permission denied':'Location unavailable'}),{enableHighAccuracy:true,timeout:14000,maximumAge:0})}catch(e){fin({err:'Location blocked'})}})}
+const shortSite=n=>String(n).split(/[–-]/)[0].replace(/ Branch$| Office$/,'').trim();
 function vChips(v){if(!v)return'<span class="muted small">—</span>';const f=v.method==='qr'?chip('🔳 QR','green'):v.method==='gps'?'':v.live?chip('🙂 Live','green'):v.method==='photo'?chip('📷 Photo only','amber'):chip('No face check','red');
- const g=v.fence==='in'?chip('📍 '+fmtDist(v.dist),'green'):v.fence==='out'?chip('📍 '+fmtDist(v.dist)+' away','red'):v.fence==='remote'?chip('📍 Remote','blue'):chip('📍 No GPS','amber');return f+' '+g}
+ const sn=v.site?shortSite(v.site)+' · ':'';const g=v.fence==='in'?chip('📍 '+sn+fmtDist(v.dist),'green'):v.fence==='other'?chip('📍 '+sn+'other branch','amber'):v.fence==='out'?chip('📍 '+fmtDist(v.dist)+' away','red'):v.fence==='remote'?chip('📍 Remote','blue'):chip('📍 No GPS','amber');return f+' '+g}
 function vCell(v,k,w){if(!v)return'<span class="muted small">—</span>';return`<div class="row" style="flex-wrap:nowrap;gap:6px">${v.photo?`<img class="thumb" src="${v.photo}" data-act="vView" data-k="${k}" data-w="${w}" alt="selfie">`:''}<span data-act="vView" data-k="${k}" data-w="${w}" style="cursor:pointer" class="nw">${vChips(v)}</span></div>`}
 function stopVerify(){if(VF){VF.done=true;if(VF.stream)VF.stream.getTracks().forEach(t=>t.stop());clearTimeout(VF.timer);VF=null}}
 function vStep(id,icon,label){return`<div class="vstep" id="vs-${id}">${icon} <span>${label}</span><span class="st">${chip('Waiting…','gray')}</span></div>`}
 function setStep(id,txt,c){const el=document.querySelector('#vs-'+id+' .st');if(el)el.innerHTML=chip(txt,c)}
 function verifyStart(kind){
  if(!D.privacyAck[S.user]){openModal('Attendance privacy notice',`<div class="note">To confirm attendance, ${esc(D.settings.company)} collects your <b>location</b> and, depending on the method, a <b>selfie</b> — <b>only at the moment you clock in or out</b>. There is no continuous tracking.<br><br>• Used only for attendance verification and payroll accuracy<br>• Visible to your supervisor, manager and HR<br>• Selfies are deleted after ${D.settings.retention} days<br>• You can ask HR to access or correct your data (Data Privacy Act of 2012)</div>`,{submit:'I understand — continue',fn:()=>{D.privacyAck[S.user]=todayStr;log('Privacy','Acknowledged attendance privacy notice');save();setTimeout(()=>verifyStart(kind),50);return true}});return}
- if(kind==='in'){openModal('Clock In · Where are you working today?',`<div class="seg">${[['Office','🏢'],['Field','🚚'],['WFH','🏠']].map(([m,i])=>`<button type="button" data-act="verifyMode" data-m="${m}"><span>${i}</span>${m==='Field'?'Field work':m==='WFH'?'Work from home':'Office / store'}</button>`).join('')}</div><div class="small muted mt">Office punches are checked against ${esc(D.settings.officeName)} (${D.settings.radius} m). Field and WFH punches record your location without the radius check.</div>`);return}
+ if(kind==='in'){openModal('Clock In · Where are you working today?',`<div class="seg">${[['Office','🏢'],['Field','🚚'],['WFH','🏠']].map(([m,i])=>`<button type="button" data-act="verifyMode" data-m="${m}"><span>${i}</span>${m==='Field'?'Field work':m==='WFH'?'Work from home':'Office / store'}</button>`).join('')}</div><div class="small muted mt">Office punches are checked against your branch: <b>${esc(me().anySite?'any company branch':homeSite(me()).name)}</b>. Field and WFH punches record your location without the radius check.</div>`);return}
  verifyBoot('out',(D.att[S.user+'|'+todayStr]||{}).mode||'Office');
 }
 function runVerify(kind,mode){
@@ -920,7 +934,7 @@ function runVerify(kind,mode){
 }
 function verifyBoot(kind,mode){const vm=D.settings.verifyMode;const method=vm==='qr'&&mode!=='Office'?'selfie':vm;
  runVerify(kind,mode);VF={kind,mode,method,gps:null,photo:null,live:false,qrOk:false,done:false,steps:[],base:null,phase:0,turned:false,closed:false};
- getGPS().then(g=>{if(!VF)return;VF.gps=g;if(g.err)setStep('gps',g.err,'amber');else if(mode!=='Office'){g.fence='remote';g.dist=hav(g.lat,g.lng,D.settings.lat,D.settings.lng);setStep('gps',`Recorded (±${g.acc} m)`,'blue')}else{const d=hav(g.lat,g.lng,D.settings.lat,D.settings.lng);g.dist=d;g.fence=d<=D.settings.radius+Math.min(g.acc,50)?'in':'out';setStep('gps',g.fence==='in'?`At ${D.settings.officeName} · ${fmtDist(d)}`:`${fmtDist(d)} from ${D.settings.officeName}`,g.fence==='in'?'green':'red')}checkReady()});
+ getGPS().then(g=>{if(!VF)return;VF.gps=g;if(g.err)setStep('gps',g.err,'amber');else if(mode!=='Office'){g.fence='remote';const n=nearestSite(g);g.dist=n.d;g.site=n.s.name;setStep('gps',`Recorded (±${g.acc} m)`,'blue')}else{const r=siteCheck(me(),g);Object.assign(g,r);setStep('gps',r.fence==='in'?`At ${r.site} · ${fmtDist(r.dist)}`:r.fence==='other'?`At ${r.site} (not your branch)`:`${fmtDist(r.dist)} from ${r.site}`,r.fence==='in'?'green':r.fence==='other'?'amber':'red')}checkReady()});
  if(method==='selfie')startCamera();else if(method==='qr')startQR();else checkReady();
 }
 async function openCam(facing){const v=$('#vid');try{if(!navigator.mediaDevices?.getUserMedia)throw 0;VF.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:640},height:{ideal:480}},audio:false});if(!VF||VF.done){VF?.stream?.getTracks().forEach(t=>t.stop());return false}v.srcObject=VF.stream;await v.play();return true}catch(e){return false}}
@@ -961,16 +975,16 @@ async function startQR(){$('#prompt').textContent='Point at the QR code on the k
  $('#fbArea').innerHTML=qrIn;
  try{await loadScript('lib/jsQR.js')}catch(e){$('#prompt').textContent='Scanner unavailable — type the code below';return}
  const v=$('#vid'),c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});
- const scan=()=>{if(!VF||VF.done||VF.qrOk)return;if(v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0);const r=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);if(r&&r.data.startsWith('W360:')){if(qrValid(r.data.slice(5)))return qrPass();$('#prompt').textContent='Expired code — scan the current one'}}VF.timer=setTimeout(scan,150)};scan()}
-function qrPass(){VF.qrOk=true;VF.methodUsed='qr';stopCamOnly();const ca=$('#camArea');if(ca)ca.innerHTML='<div class="empty" style="font-size:40px">✅</div>';$('#fbArea').innerHTML='';setStep('qr','Verified','green');checkReady()}
+ const scan=()=>{if(!VF||VF.done||VF.qrOk)return;if(v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0);const r=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);if(r&&r.data.startsWith('W360:')){const qs=qrValid(r.data.slice(5));if(qs)return qrPass(qs);$('#prompt').textContent='Expired code — scan the current one'}}VF.timer=setTimeout(scan,150)};scan()}
+function qrPass(qs){VF.qrOk=true;VF.methodUsed='qr';VF.qrSite=qs&&qs.name;stopCamOnly();const ca=$('#camArea');if(ca)ca.innerHTML='<div class="empty" style="font-size:40px">✅</div>';$('#fbArea').innerHTML='';setStep('qr','Verified','green');checkReady()}
 function checkReady(){if(!VF)return;const ok=$('#vOk'),m=$('#vMsg');if(!ok)return;const g=VF.gps;
  const need=VF.method==='selfie'?!!VF.photo:VF.method==='qr'?VF.qrOk:true;
  if(!g||!need){ok.disabled=true;m.textContent=!g?'Getting your location…':'';return}
- const issues=[];if(VF.method==='selfie'&&!VF.live)issues.push('liveness not verified');if(g.err)issues.push('no GPS');else if(g.fence==='out')issues.push('outside the work site');
+ const issues=[];if(VF.method==='selfie'&&!VF.live)issues.push('liveness not verified');if(g.err)issues.push('no GPS');else if(g.fence==='out')issues.push('outside your branch');else if(g.fence==='other')issues.push('at a branch you are not assigned to');
  if(D.settings.strict&&issues.length){ok.disabled=true;m.innerHTML=`<span style="color:var(--red);font-weight:600">Blocked by strict mode: ${issues.join(', ')}.</span> File a correction request instead.`;return}
  ok.disabled=false;m.innerHTML=issues.length?`⚠️ Will be flagged for review: ${issues.join(', ')}.`:'✅ All checks passed.'}
 function verifyDone(){if(!VF)return;const g=VF.gps||{};const at=nowHM();
- const v={live:VF.live,method:VF.methodUsed||VF.method,photo:VF.photo||undefined,at,...(g.err?{fence:'none',gpsErr:g.err}:{lat:g.lat,lng:g.lng,acc:g.acc,dist:g.dist,fence:g.fence})};
+ const v={live:VF.live,method:VF.methodUsed||VF.method,photo:VF.photo||undefined,at,...(VF.qrSite?{qrSite:VF.qrSite}:{}),...(g.err?{fence:'none',gpsErr:g.err}:{lat:g.lat,lng:g.lng,acc:g.acc,dist:g.dist,fence:g.fence,site:g.site,siteId:g.siteId})};
  if(VF.method==='qr'||VF.method==='gps')v.live=VF.method==='qr';
  const k=S.user+'|'+todayStr,kind=VF.kind,mode=VF.mode;
  if(kind==='in')D.att[k]={in:at,mode,breaks:[],vin:v};else{const r=D.att[k];r.out=toMin(at)<toMin(r.in)?r.in:at;r.vout=v;(r.breaks||[]).forEach(b=>{if(!b.e)b.e=at})}
@@ -981,7 +995,7 @@ function vView(d){const r=D.att[d.k];const v=r&&r[d.w];if(!v)return;const[id,dat
  if(canManage(id))log('Access',`Viewed attendance proof of ${emp(id).name} (${date})`);
  openModal(`${esc(emp(id).name)} · ${d.w==='vin'?'Clock in':'Clock out'}`,`${v.photo?`<img class="selfie" src="${v.photo}">`:`<div class="empty">${v.purged?'Selfie deleted under the retention policy.':v.method==='qr'?'Verified by site QR code.':'No selfie stored (sample data).'}</div>`}
  <div class="rec" style="margin-top:14px"><dl><dt>Date & time</dt><dd>${fmtDate(date)} · ${fmt12(d.w==='vin'?r.in:r.out)} · ${esc(r.mode||'Office')}</dd><dt>Identity check</dt><dd>${v.method==='qr'?'Site QR code (rotating)':v.live?'Live check passed (head movement + still capture)':v.method==='photo'?'Photo only — no live check':v.method==='gps'?'GPS only':'Not checked'}</dd>
- <dt>Location</dt><dd>${v.fence==='none'?esc(v.gpsErr||'No GPS'):v.fence==='remote'?`Remote (${esc(r.mode)})${v.dist!=null?' · '+fmtDist(v.dist)+' from site':''}`:`${v.fence==='in'?'Inside':'<b style="color:var(--red)">Outside</b>'} ${esc(D.settings.officeName)} · ${fmtDist(v.dist)}${v.acc?` (±${v.acc} m)`:''}`}${v.lat?`<br><a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`:''}</dd>${r.edited?`<dt>Edited by</dt><dd>${esc(emp(r.edited).name)}${r.why?' — '+esc(r.why):''}</dd>`:''}</dl></div>`)}
+ <dt>Location</dt><dd>${v.fence==='none'?esc(v.gpsErr||'No GPS'):v.fence==='remote'?`Remote (${esc(r.mode)})${v.dist!=null?' · '+fmtDist(v.dist)+' from '+esc(v.site||'nearest branch'):''}`:`${v.fence==='in'?'Inside':v.fence==='other'?'<b style="color:var(--amber)">At another branch:</b>':'<b style="color:var(--red)">Outside</b>'} ${esc(v.site||D.settings.officeName)} · ${fmtDist(v.dist)}${v.fence==='out'?' away':''}${v.acc?` (±${v.acc} m)`:''}${v.qrSite?`<br>QR scanned at ${esc(v.qrSite)}`:''}`}${v.lat?`<br><a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`:''}</dd>${r.edited?`<dt>Edited by</dt><dd>${esc(emp(r.edited).name)}${r.why?' — '+esc(r.why):''}</dd>`:''}</dl></div>`)}
 document.addEventListener('change',e=>{if(e.target.id==='selfieIn')onSelfie(e.target.files[0])});
 
 /* ===================== actions ===================== */
@@ -998,12 +1012,18 @@ const ACT={
  verifyDone,vView,
  camRetry:()=>{if(!VF)return;$('#fbArea').innerHTML='';$('#camArea').innerHTML='<div class="cam"><video id="vid" playsinline muted autoplay></video><canvas id="ov"></canvas><div class="ring" id="ring"></div><div class="prompt" id="prompt">Starting camera…</div></div>';VF.phase=0;VF.hold=0;VF.turned=false;startCamera()},
  tgtP:d=>{S.tgtP=d.p;render()},
+ siteEdit:()=>rowEditor('Branches / work sites',[{k:'name',label:'Branch name',full:true,ph:'e.g. Mandaue Branch'},{k:'lat',label:'Latitude',type:'number'},{k:'lng',label:'Longitude',type:'number'},{k:'radius',label:'Allowed radius (m)',type:'number',def:150}],sites(),rows=>{if(!rows.length){toast('Keep at least one branch');return false}
+  const old=sites();D.settings.sites=rows.map((r,i)=>({...r,id:(old[i]&&old[i].id)||'s'+uid()}));const ids=new Set(D.settings.sites.map(x=>x.id));D.emps.forEach(e=>{if(!ids.has(e.site))e.site=D.settings.sites[0].id});log('Settings',`Updated branches (${rows.length})`);toast('Branches saved')},
+  '<div class="note" style="margin-bottom:12px">Tip: stand inside each branch and tap <b>Use my current location</b>, or copy the coordinates from Google Maps (long-press the spot). 100–200 m radius works for most stores.</div>',
+  `<div class="row" style="margin:0 0 10px">${B('📍 Use my current location','siteHere',{},'sm ghost')}</div>`),
+ siteHere:(d,a)=>{const card=a.closest('[data-i]');toast('Getting location…');getGPS().then(g=>{if(g.err)return toast(g.err+' — enter the coordinates from Google Maps');card.querySelector('input[name^="lat_"]').value=g.lat.toFixed(6);card.querySelector('input[name^="lng_"]').value=g.lng.toFixed(6);toast(`Location set (±${g.acc} m). Tap Save.`)})},
+
  tgtAuto:()=>{document.querySelectorAll('#tgtform input[name^="t|"]').forEach(inp=>{const[,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];if(m)inp.value=S.tgtP==='day'?autoDay(m):autoWeek(m)});toast('Filled from monthly targets — review, then Save')},
  tgtCopy:()=>{const prev=S.tgtP==='day'?(()=>{let d=addDays(parseD(S.tgtD),-1);return ds(d)})():ds(addDays(parseD(wkStart(S.tgtD)),-7));let n=0;
   document.querySelectorAll('#tgtform input[name^="t|"]').forEach(inp=>{const[,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];let src=S.tgtP==='day'?dayT(id,prev):weekT(id,prev);if(S.tgtP==='day'&&!Object.keys(src).length)src=dayT(id,ds(addDays(parseD(prev),-1)));if(m&&src[m.name]!=null){inp.value=src[m.name];n++}});toast(n?'Copied — review, then Save':'Nothing to copy from the previous period')},
  tgtSync:()=>{const mStart=todayStr.slice(0,8)+'01';let n=0;team().filter(e=>canManage(e.id)).forEach(e=>{metricsOf(e.id).forEach(m=>{const v=[];Object.keys(D.daily).forEach(k=>{const[id,d]=k.split('|');if(id===e.id&&d>=mStart){const a=D.daily[k][m.name];if(a!=null&&a!=='')v.push(+a)}});if(v.length){m.actual=isPct(m.unit)?Math.round(avg(v)*10)/10:Math.round(sum(v)*100)/100;n++}})});log('KPI',`Updated scorecards from month-to-date daily results (${n} values)`);save();render();toast(n?'Scorecards updated with month-to-date results':'No daily results this month yet')},
  myActSave:()=>{const k=S.user+'|'+todayStr;const A=D.daily[k]||{};metricsOf(S.user).forEach((m,i)=>{const el=document.querySelector(`[name="act_${i}"]`);if(el&&el.value!=='')A[m.name]=+el.value});D.daily[k]=A;log('Targets','Logged daily results');save();render();toast('Results saved ✅')},
- qrType:()=>{const c=$('#qrCodeIn').value;if(qrValid(c))qrPass();else{setStep('qr','Wrong or expired code','red')}},
+ qrType:()=>{const qs=qrValid($('#qrCodeIn').value);if(qs)qrPass(qs);else{setStep('qr','Wrong or expired code','red')}},
  breakStart:()=>{const r=today();r.breaks=r.breaks||[];r.breaks.push({s:nowHM()});save();render();toast('Break started ☕')},
  breakEnd:()=>{const r=today();const b=r.breaks.find(b=>!b.e);b.e=nowHM();save();render();toast(`Break ended · ${toMin(b.e)-toMin(b.s)} min`)},
  officeHere:()=>{toast('Getting location…');getGPS().then(g=>{if(g.err)return toast(g.err+' — enter coordinates manually (copy from Google Maps)');document.querySelector('[name=lat]').value=g.lat.toFixed(6);document.querySelector('[name=lng]').value=g.lng.toFixed(6);toast(`Location set (±${g.acc} m). Click Save settings.`)})},
@@ -1056,19 +1076,20 @@ const ACT={
  annNew:()=>openModal('Post announcement',`${fld('Title',`<input name="t" required>`)}${fld('Message',`<textarea name="b" required></textarea>`)}<label class="row"><input type="checkbox" name="p"> Pin to top</label>`,{submit:'Post',fn:f=>{D.ann.push({id:uid(),by:S.user,date:todayStr,title:f.t,body:f.b,pinned:f.p==='on'});log('Announcement',f.t);toast('Announcement posted')}}),
  annDel:d=>{D.ann=D.ann.filter(a=>a.id!==d.id);save();render()},
  empView:d=>{if(d.e!==S.user&&canManage(d.e))log('Access',`Viewed profile of ${emp(d.e).name}`);openModal('Employee profile',profile(d.e),{wide:true})},
- empForm:d=>{const e=d.e?emp(d.e):{name:'',position:'',dept:Object.keys(D.kpiT)[0],role:'employee',mgr:'',email:'',phone:'',hired:todayStr,status:'Active',shift:D.settings.shifts[0].id,restDay:0,empType:'Probationary',location:D.settings.officeName};
+ empForm:d=>{const e=d.e?emp(d.e):{name:'',position:'',dept:Object.keys(D.kpiT)[0],role:'employee',mgr:'',email:'',phone:'',hired:todayStr,status:'Active',shift:D.settings.shifts[0].id,restDay:0,empType:'Probationary',site:sites()[0].id,anySite:false};
   openModal(d.e?'Edit employee':'Add employee',`<div class="f2">${fld('Full name',`<input name="name" required value="${esc(e.name)}">`)}${fld('Position',`<input name="position" required value="${esc(e.position)}">`)}</div>
   <div class="f3">${fld('Department',`<select name="dept">${opts(Object.keys(D.kpiT),e.dept)}</select>`)}${fld('System role',`<select name="role">${kvOpts(ROLES,e.role)}</select>`)}${fld('Reports to',`<select name="mgr"><option value="">—</option>${empOpts(D.emps.filter(x=>x.id!==d.e&&x.role!=='employee'),e.mgr)}</select>`)}</div>
   <div class="f3">${fld('Shift',`<select name="shift">${D.settings.shifts.map(s=>`<option value="${s.id}" ${s.id===e.shift?'selected':''}>${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}</select>`)}${fld('Rest day',`<select name="restDay">${DOW.map((n,i)=>`<option value="${i}" ${i==e.restDay?'selected':''}>${n}</option>`).join('')}</select>`)}${fld('Employment type',`<select name="empType">${opts(['Regular','Probationary','Contractual','Project-based','Part-time'],e.empType)}</select>`)}</div>
-  <div class="f3">${fld('Work location',`<input name="location" value="${esc(e.location||'')}">`)}${fld('Date hired',`<input type="date" name="hired" value="${e.hired}">`)}${fld('Status',`<select name="status">${opts(['Active','On leave','Resigned','Terminated','Inactive'],e.status)}</select>`)}</div>
+  <div class="f2">${fld('Home branch',`<select name="site">${sites().map(x=>`<option value="${x.id}" ${x.id===e.site?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`)}<label class="row" style="cursor:pointer;margin-top:22px;flex-wrap:nowrap"><input type="checkbox" name="anySite" ${e.anySite?'checked':''}> <span class="small">Can clock in at <b>any branch</b> (roving)</span></label></div>
+  <div class="f3">${fld('Date hired',`<input type="date" name="hired" value="${e.hired}">`)}${fld('Status',`<select name="status">${opts(['Active','On leave','Resigned','Terminated','Inactive'],e.status)}</select>`)}</div>
   <div class="f2">${fld('Email',`<input type="email" name="email" value="${esc(e.email)}">`)}${fld('Mobile',`<input name="phone" value="${esc(e.phone)}">`)}</div>`,
-  {wide:true,fn:f=>{f.restDay=+f.restDay;f.mgr=f.mgr||null;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
+  {wide:true,fn:f=>{f.restDay=+f.restDay;f.mgr=f.mgr||null;f.anySite=f.anySite==='on';f.location=siteBy(f.site).name;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
  csv:d=>{const rows=repRows(d.k);log('Report',`Downloaded ${d.k} report (${S.repDays} days)`);download(`workforce360-${d.k}-${todayStr}.csv`,toCSV(rows))},
  csvCopy:d=>{const t=toCSV(repRows(d.k));navigator.clipboard.writeText(t).then(()=>toast('Copied! Paste into Excel or Google Sheets.'),()=>copyBox(t))},
  swatch:d=>{document.querySelector('[name=brand]').value=d.c;document.documentElement.style.setProperty('--brand',d.c)},
  rowAdd:()=>{RE.n++;$('#reT').insertAdjacentHTML('beforeend',RE.rowH({},RE.n));const el=$('#reT').lastElementChild;el.scrollIntoView({block:'center'});const f=el.querySelector('input,select');if(f)f.focus()},
  rowDel:(d,a)=>a.closest('[data-i]').remove(),
- resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();migrateKpi();seedTargets();S.user='e1';S.view='';toast('Demo data restored')}})
+ resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();migrateSites();migrateKpi();seedTargets();S.user='e1';S.view='';toast('Demo data restored')}})
 };
 let EVP=null;
 function updSugg(){const f=$('#mform');if(!f||!$('#sugg'))return;const s=suggestNext(f.emp.value,f.issue.value);$('#sugg').innerHTML=`💡 Suggested next step: <b>${esc(s.next)}</b> <span class="muted">(${s.prior} prior record${s.prior===1?'':'s'} on this issue in 180 days)</span>`;if(f.issue.value==='Excellent Work')f.type.value='Commendation';else if(f.issue.value==='Development')f.type.value='Coaching';else if(ACC_TYPES.includes(s.next))f.type.value=s.next}
@@ -1079,6 +1100,8 @@ document.addEventListener('change',e=>{
  if(e.target.id==='evIn'){const file=e.target.files[0];if(!file)return;const img=new Image();img.onload=()=>{EVP=snap(img,false);$('#evPrev').innerHTML=`<img class="selfie mt8" src="${EVP}">`};img.src=URL.createObjectURL(file);return}
  const c=e.target.dataset.chg;if(!c)return;
  if(c==='role'){S.user=e.target.value;S.tabs={};S.taskEmp='all';S.view='';S.bell=false;save();render();toast('Now viewing as '+me().name+' ('+ROLES[role()]+')')}
+ else if(c==='attSite'){S.attSite=e.target.value;render()}
+ else if(c==='kioskSite'){S.kioskSite=e.target.value;kioskMin=-1;kioskTick()}
  else if(c==='tgtD'){S.tgtD=e.target.value||todayStr;render()}
  else if(c==='attDate'){S.attDate=e.target.value||todayStr;render()}
  else if(c==='taskEmp'){S.taskEmp=e.target.value;render()}

@@ -1,4 +1,4 @@
-# Workforce360
+# WorkForce360 by Jessie Cajandab
 
 Mobile-first attendance, performance, productivity, coaching and recognition platform (demo with sample data).
 

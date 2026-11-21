@@ -38,7 +38,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Workforce360 v1.0.${{ github.run_number }}
+          name: WorkForce360 by Jessie Cajandab v1.0.${{ github.run_number }}
           files: Workforce360.apk
           make_latest: true
           body: |
