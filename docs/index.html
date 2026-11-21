@@ -15,6 +15,18 @@
 <style>
 :root{--brand:#0f766e;--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e5e9f2;--green:#16a34a;--blue:#2563eb;--amber:#d97706;--red:#dc2626;--r:14px}
 *{box-sizing:border-box}
+html,body{overflow-x:hidden;max-width:100%}
+.grid>*{min-width:0}
+.award .person{min-width:0}
+.tgt td{vertical-align:top}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:10px 0 4px}
+.tcell{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px}
+.tcell .lb{font-size:12px;font-weight:600;margin-bottom:6px;min-height:30px}
+.tcell .inp{width:100%;padding:6px 8px}
+.tcell label{font-size:11px;color:var(--muted);display:block;margin-top:6px}
+.temp{padding:14px 0;border-bottom:1px solid var(--line)}.temp:last-child{border:0}
+.tgt .inp{width:96px;padding:6px 8px}
+.mini{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--brand)}
@@ -166,6 +178,9 @@ tr:last-child td{border-bottom:0}
 .bandrow{display:flex;gap:6px;flex-wrap:wrap}
 @media(max-width:1150px){.g6,.g5{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){
+ .bellp{position:fixed;left:10px;right:10px;top:64px;width:auto;max-width:none;max-height:75vh}
+ .g-aw{grid-template-columns:1fr 1fr}
+ .mbox .inp{min-width:0}
  .side{transform:translateX(-100%)}.side.open{transform:none}
  .scrim{display:block;position:fixed;inset:0;background:#0006;z-index:30;opacity:0;pointer-events:none;transition:.2s}
  .side.open+.scrim{opacity:1;pointer-events:auto}
@@ -176,7 +191,7 @@ tr:last-child td{border-bottom:0}
  .kan{grid-template-columns:1fr}
  .who label{display:none}.who select{max-width:118px}.who .av{display:none}
 }
-@media(max-width:560px){.g6,.g5,.g4{grid-template-columns:repeat(2,1fr)}.stat .v{font-size:21px}.f2,.f3{grid-template-columns:1fr}.clockcard .time{font-size:30px}.rec dl{grid-template-columns:1fr}}
+@media(max-width:560px){.g6,.g5,.g4{grid-template-columns:repeat(2,1fr)}.g-aw{grid-template-columns:1fr}.tgt .inp{width:78px}.stat .v{font-size:21px}.f2,.f3{grid-template-columns:1fr}.clockcard .time{font-size:30px}.rec dl{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -333,7 +348,7 @@ function seed(){
   {id:uid(),emp:'e11',type:'Customer Hero',title:'Customer Hero',date:rel(-5),by:'e3',points:20,note:'Resolved 40+ tickets with 98% satisfaction.'},
   {id:uid(),emp:'e12',type:'Shout-out',title:'Shout-out',date:rel(-2),by:'e14',points:10,note:'Finished the Mandaue deliveries despite the rain.'}];
  const ann=[
-  {id:uid(),by:'e1',date:rel(-1),title:'New clock-in verification',body:'Clock in/out now uses a selfie, GPS and a quick liveness check. Your photo and location are taken only at the moment you punch and are used only for attendance.',pinned:true},
+  {id:uid(),by:'e1',date:rel(-1),title:'New clock-in verification',body:'Clock in/out now uses a selfie, GPS and a quick head-turn liveness check. Your photo and location are taken only at the moment you punch and are used only for attendance.',pinned:true},
   {id:uid(),by:'e15',date:rel(-3),title:'Bonifacio Day schedule',body:'November 30 is a regular holiday. Store operations follow the holiday roster; check your schedule.',pinned:false},
   {id:uid(),by:'e2',date:rel(-4),title:'Sale weekend reminder',body:'All sales staff please report 15 minutes early this Saturday and Sunday.',pinned:false}];
  const accomp=[
@@ -352,10 +367,30 @@ function seed(){
 const KEY='workforce360-demo-v3';
 let D;try{D=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!D||D.v!==3)D=seed();
-const S={user:'e1',view:'',tabs:{},menu:false,bell:false,attDate:todayStr,taskEmp:'all',repDays:30,accFilter:'open'};
+const S={tgtP:'day',tgtD:todayStr,user:'e1',view:'',tabs:{},menu:false,bell:false,attDate:todayStr,taskEmp:'all',repDays:30,accFilter:'open'};
 try{const u=localStorage.getItem(KEY+'-user');if(u&&D.emps.find(e=>e.id===u))S.user=u}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D));localStorage.setItem(KEY+'-user',S.user)}catch(e){toast('Browser storage is full — older selfies may not be saved')}}
 function log(action,detail){D.audit.unshift({at:new Date().toISOString(),user:S.user,action,detail});if(D.audit.length>600)D.audit.length=600}
+/* daily & weekly targets */
+const wkStart=d=>{const x=parseD(d);return ds(addDays(x,-((x.getDay()+6)%7)))};
+const isPct=u=>u==='%';
+const metricsOf=id=>(D.kpis[id]||[]);
+const fmtV=(m,v)=>v==null||v===''||isNaN(v)?'—':m.unit==='₱'?peso(v):isPct(m.unit)?(Math.round(v*10)/10)+'%':Math.round(v*10)/10;
+const dayT=(id,d)=>D.dtarget[id+'|'+d]||{};
+const dayA=(id,d)=>D.daily[id+'|'+d]||{};
+const weekT=(id,w)=>D.wtarget[id+'|'+w]||{};
+function weekA(id,w,m){const v=[];for(let i=0;i<7;i++){const d=ds(addDays(parseD(w),i));if(d>todayStr)break;const a=dayA(id,d)[m.name];if(a!=null&&a!=='')v.push(+a)}if(!v.length)return null;return isPct(m.unit)?avg(v):sum(v)}
+const achv=(t,a)=>(+t>0&&a!=null&&a!=='')?Math.min(150,a/t*100):null;
+function dayAch(id,d){const T=dayT(id,d),A=dayA(id,d);const x=metricsOf(id).map(m=>achv(T[m.name],A[m.name])).filter(v=>v!=null);return x.length?avg(x.map(v=>Math.min(v,120))):null}
+function weekAch(id,w){const T=weekT(id,w);const x=metricsOf(id).map(m=>achv(T[m.name],weekA(id,w,m))).filter(v=>v!=null);return x.length?avg(x.map(v=>Math.min(v,120))):null}
+const autoDay=m=>isPct(m.unit)?m.target:m.unit==='₱'?Math.round(m.target/26/100)*100:Math.round(m.target/26*10)/10;
+const autoWeek=m=>isPct(m.unit)?m.target:Math.round(m.target/26*6);
+function seedTargets(){D.daily=D.daily||{};D.dtarget=D.dtarget||{};D.wtarget=D.wtarget||{};const R=mulberry32(5);
+ D.emps.filter(e=>e.role==='employee').forEach(e=>{const pf=e.pf||.9;
+  for(let k=13;k>=0;k--){const d=rel(-k),dd=parseD(d);if(dd.getDay()===+e.restDay||holidayOn(d))continue;const T={},A={};
+   metricsOf(e.id).forEach(m=>{T[m.name]=autoDay(m);const a=m.target*(isPct(m.unit)?Math.min(1.02,pf*(.92+R()*.1)):pf*(.75+R()*.45)/26);A[m.name]=isPct(m.unit)?Math.min(100,Math.round(a*10)/10):Math.round(a)});
+   D.dtarget[e.id+'|'+d]=T;const r=D.att[e.id+'|'+d];if(k>0&&r&&!r.absent)D.daily[e.id+'|'+d]=A}
+  [wkStart(todayStr),wkStart(rel(-7))].forEach(w=>{const T={};metricsOf(e.id).forEach(m=>T[m.name]=autoWeek(m));D.wtarget[e.id+'|'+w]=T})});D.tgtSeeded=1}
 (function purge(){const cut=rel(-(+D.settings.retention||90));for(const k in D.att){const d=k.split('|')[1];if(d<cut){const r=D.att[k];['vin','vout'].forEach(w=>{if(r[w]&&r[w].photo){delete r[w].photo;r[w].purged=true}})}}})();
 
 /* ===================== model ===================== */
@@ -535,6 +570,7 @@ function dashMgmt(){
    ${isExec()?'':`<div class="card mt"><h3>📝 Pending approvals</h3>${pa.length?pa.slice(0,5).map(reqRow).join(''):'<div class="empty">Nothing to approve.</div>'}</div>`}
   </div>
  </div>
+ ${isExec()?'':`<div class="card mt"><h3>🎯 Today's targets<span class="sp"></span>${B('Set targets','go',{v:'performance',tab:'targets'},'sm ghost')}</h3><div class="grid g4">${T.filter(e=>e.role==='employee').map(e=>{const d=dayAch(e.id,todayStr),y=dayAch(e.id,rel(-1)),w=weekAch(e.id,wkStart(todayStr));return`<div class="row" style="flex-wrap:nowrap">${av(e.id)}<div style="min-width:0;flex:1"><b class="small">${esc(e.name)}</b><div class="mini">Today ${d!=null?r0(d)+'%':Object.keys(dayT(e.id,todayStr)).length?'no result yet':'no target'} · Week ${w!=null?r0(w)+'%':'—'}</div>${barH(Math.min(w||0,100),bandColor(w||0))}</div></div>`}).join('')||'<div class="muted">No team members</div>'}</div></div>`}
  <div class="grid g2 mt">${annCard()}<div class="card"><h3>✅ Team accomplishments</h3>${ac.map(a=>`<div class="flag">${av(a.emp)}<div class="txt"><b>${esc(emp(a.emp).name)}</b> <span class="small muted">· ${fmtShort(a.date)}</span><div class="small">${esc(a.text)}</div></div></div>`).join('')||'<div class="empty">No accomplishments logged yet.</div>'}</div></div>`;
 }
 function reqRow(x){const lv=!x.kind;const what=lv?`${esc(x.type)} leave · ${leaveDays(x)} day${leaveDays(x)>1?'s':''}`:x.kind==='Overtime'?`Overtime · ${x.hours} hrs`:`Correction · ${esc(x.sub)}`;
@@ -566,6 +602,9 @@ function dashEmp(){
  ${ack.length?`<div class="warn mt"><b>📝 Needs your acknowledgment</b>${ack.map(x=>`<div class="flag"><div class="txt">${chip(x.type,TYC[x.type])} <b>${esc(x.issue)}</b> · ${fmtDate(x.date)}<div class="small muted">${esc(x.details)}</div></div>${B('Review','nav',{v:'coaching'},'sm')}</div>`).join('')}</div>`:''}
  <div class="grid g2 mt">
   <div class="card"><h3>My tasks<span class="sp"></span>${B('Open board','nav',{v:'goals'},'sm ghost')}</h3>${myTasks.length?myTasks.slice(0,5).map(x=>`<div class="flag"><div class="txt"><b>${esc(x.title)}</b><div class="small">${dueTxt(x)} · ${prChip(x.priority)}</div></div>${B('✓ Done','taskDone',{id:x.id},'sm green')}</div>`).join(''):'<div class="empty">All caught up! 🎉</div>'}</div>
+  ${myTargetsCard()}
+ </div>
+ <div class="grid g2 mt">
   <div class="card"><h3>Today's accomplishments</h3><div class="row"><input class="inp" style="flex:1" id="acIn" placeholder="What did you get done?"> ${B('Add','accompAdd',{},'sm')}</div>${myAc.map(x=>`<div class="flag"><div class="txt small"><b>${fmtShort(x.date)}</b> · ${esc(x.text)}</div></div>`).join('')}</div>
  </div>
  <div class="grid g2 mt">
@@ -574,6 +613,10 @@ function dashEmp(){
  </div>
  <div class="card mt"><h3>My KPI trend</h3><div class="chartbox"><canvas id="cMe"></canvas></div></div>`;
 }
+function myTargetsCard(){const u=me();const M=metricsOf(u.id);const T=dayT(u.id,todayStr),A=dayA(u.id,todayStr),w=wkStart(todayStr),WT=weekT(u.id,w);
+ const has=M.some(m=>+T[m.name]>0||+WT[m.name]>0);
+ return`<div class="card"><h3>🎯 Today's targets<span class="sp"></span>${has?B('Save results','myActSave',{},'sm'):''}</h3>${has?`<div class="tgrid">${M.map((m,i)=>{const t=T[m.name],a=A[m.name],wt=WT[m.name],wa=weekA(u.id,w,m),da=achv(t,a),wa2=achv(wt,wa);
+  return`<div class="tcell"><div class="lb">${esc(m.name)}</div><div class="mini">Today's target: <b>${+t>0?fmtV(m,t):'—'}</b></div><label>My result today</label><input class="inp" type="number" step="any" name="act_${i}" value="${a??''}" placeholder="0">${da!=null?`<div class="mini" style="color:${bandColor(da)}">${r0(da)}% of today's target</div>`:''}${+wt>0?`<div class="mt8">${barH(Math.min(wa2||0,100),bandColor(wa2||0))}<div class="mini">Week: ${fmtV(m,wa??0)} / ${fmtV(m,wt)}</div></div>`:''}</div>`}).join('')}</div><div class="small muted mt8">Targets set by ${esc(emp(u.mgr).name)}. Log your results before end of shift.</div>`:'<div class="empty">No targets set for today yet.</div>'}</div>`}
 function dashEmpAfter(){mk('cMe',{type:'line',data:{labels:monthLabels(),datasets:[{label:'KPI score %',data:hist(S.user),borderColor:D.settings.brand,backgroundColor:D.settings.brand+'22',fill:true,tension:.35}]},options:{scales:{y:{suggestedMin:50,suggestedMax:120}},plugins:{legend:{display:false}}}})}
 const dueTxt=x=>{const od=x.status!=='done'&&x.due<todayStr;return od?`<span style="color:var(--red);font-weight:600">Overdue · ${fmtShort(x.due)}</span>`:x.due===todayStr?'Due today':'Due '+fmtShort(x.due)};
 function goalBlock(g){const[s,c]=goalStatus(g);return`<div class="goal"><div class="row"><b style="flex:1">${esc(g.title)}</b>${chip(s,c)}</div>${barH(g.progress,BC[c==='green'?'green':c])}<div class="row small muted"><span>${g.progress}% · due ${fmtShort(g.due)}${g.emp===S.user?'':' · '+esc(emp(g.emp).name)}</span><span class="sp"></span>${(g.emp===S.user||canManage(g.emp))?B('Update','goalUpd',{id:g.id},'sm ghost'):''}</div>${g.note?`<div class="small muted">📝 ${esc(g.note)}</div>`:''}</div>`}
@@ -653,21 +696,34 @@ function kioskTick(){const kc=$('#kc');if(!kc)return;const n=Date.now(),m=Math.f
 const bandLegend=()=>`<div class="bandrow">${BANDS.map(b=>`<span class="chip c-${b[2]}">${b[0]<0?'<60':b[0]+'+'} ${b[1]} — ${b[3]}</span>`).join('')}</div>`;
 function pgPerformance(){
  if(!isMgmt())return perfEmp(S.user);
- const T=team().filter(e=>e.role!=='executive');
- return`<div class="card" style="margin-bottom:16px"><b>Performance bands</b><div class="mt8">${bandLegend()}</div></div>
+ const T=team().filter(e=>e.role!=='executive');const tab=curTab('scores');
+ const head=tabs([['scores','Scorecards'],['targets','Daily & weekly targets']],'scores');
+ if(tab==='targets')return head+targetsView(T);
+ return head+`<div class="card" style="margin-bottom:16px"><b>Performance bands</b><div class="mt8">${bandLegend()}</div></div>
  <div class="grid g3"><div class="card span2"><h3>Team KPI trend (average)</h3><div class="chartbox"><canvas id="cKpi"></canvas></div></div><div class="card"><h3>Band distribution</h3><div class="chartbox"><canvas id="cBand"></canvas></div></div></div>
  <div class="card mt"><h3>Scorecards<span class="sp"></span><span class="small muted">KPI sets & weights are configured per department in Settings</span></h3><div class="tbl"><table><tr><th>#</th><th>Employee</th><th>Dept</th><th>KPI</th><th>vs last month</th><th>Attendance</th><th>Tasks</th><th>Overall</th><th>Recommended</th><th></th></tr>
  ${T.map(e=>({e,p:prod(e.id)})).sort((a,b)=>b.p-a.p).map(({e,p},i)=>{const k=kpiScore(e.id),l=lastKpi(e.id);return`<tr><td>${i+1}</td><td>${person(e.id)}</td><td>${esc(e.dept)}</td><td><div class="row" style="flex-wrap:nowrap">${barH(Math.min(k,100),bandColor(k))}<b>${r0(k)}%</b></div></td><td>${l!=null?trend(k,l):'—'}</td><td>${r0(attSum(e.id).rate)}%</td><td>${r0(taskStats(e.id).rate)}%</td><td>${scoreChip(p)}</td><td class="small">${band(p)[2]}</td><td>${B('Scorecard','kpiView',{e:e.id},'sm ghost')}</td></tr>`}).join('')}</table></div></div>`;
 }
-function pgPerformanceAfter(){if(!isMgmt())return perfEmpAfter(S.user);const T=team().filter(e=>e.role!=='executive');const h=T.map(e=>hist(e.id));const ser=monthLabels().map((_,i)=>r0(avg(h.map(x=>x[i]).filter(v=>v!=null))));
+function targetsView(T){const P=S.tgtP,key=P==='day'?S.tgtD:wkStart(S.tgtD);const L=T.filter(e=>canManage(e.id)||isExec());const deps=[...new Set(L.map(e=>e.dept))];const ro=isExec();
+ const wEnd=ds(addDays(parseD(key),6));
+ return`<div class="card"><div class="row"><div class="tabs" style="margin:0">${[['day','Daily'],['week','Weekly']].map(([k,l])=>`<button type="button" class="${P===k?'on':''}" data-act="tgtP" data-p="${k}">${l}</button>`).join('')}</div><input type="date" class="inp" value="${S.tgtD}" data-chg="tgtD"><b>${P==='day'?fmtDay(key):`Week of ${fmtShort(key)} – ${fmtShort(wEnd)}`}</b><span class="sp"></span>${ro?'':B('Auto-fill from monthly targets','tgtAuto',{},'sm ghost')+' '+B(P==='day'?'Copy previous day':'Copy last week','tgtCopy',{},'sm ghost')}</div>
+ <div class="small muted mt8">${P==='day'?'Set each person\'s target for the day and log results (employees can also log their own results on their home screen).':'Weekly targets are compared with the sum of daily results (average for % metrics).'} Monthly KPI targets are set per department in Settings.</div></div>
+ <form id="tgtform">${deps.map(d=>{const E=L.filter(e=>e.dept===d);return`<div class="card mt"><h3>${esc(d)}</h3>
+ ${E.map(e=>{const T0=P==='day'?dayT(e.id,key):weekT(e.id,key),A0=dayA(e.id,key);const ach=P==='day'?dayAch(e.id,key):weekAch(e.id,key);
+  return`<div class="temp"><div class="row">${person(e.id)}<span class="sp"></span>${ach!=null?scoreChip(ach):'<span class="muted small">no result yet</span>'}</div><div class="tgrid">${metricsOf(e.id).map((m,i)=>{const a=P==='day'?A0[m.name]:weekA(e.id,key,m);const x=achv(T0[m.name],a);
+   return`<div class="tcell"><div class="lb">${esc(m.name)}${m.unit?' ('+m.unit+')':''}</div><label>Target</label><input class="inp" type="number" step="any" min="0" name="t|${e.id}|${i}" value="${T0[m.name]??''}" ${ro?'disabled':''}>${P==='day'?`<label>Actual</label><input class="inp" type="number" step="any" min="0" name="a|${e.id}|${i}" value="${a??''}" ${ro?'disabled':''}>`:`<div class="mini">Actual so far: ${fmtV(m,a)}</div>`}${x!=null?`<div class="mt8">${barH(Math.min(x,100),bandColor(x))}<div class="mini" style="color:${bandColor(x)}">${r0(x)}% achieved</div></div>`:''}</div>`}).join('')}</div></div>`}).join('')}</div>`}).join('')||'<div class="card empty mt">No team members to set targets for.</div>'}
+ ${ro?'':`<div class="row mt"><span class="sp"></span>${B('Copy month-to-date results into scorecards','tgtSync',{},'ghost')}<button class="btn">Save ${P==='day'?'daily':'weekly'} targets</button></div>`}</form>`}
+function pgPerformanceAfter(){if(!isMgmt())return perfEmpAfter(S.user);if(curTab('scores')==='targets')return;const T=team().filter(e=>e.role!=='executive');const h=T.map(e=>hist(e.id));const ser=monthLabels().map((_,i)=>r0(avg(h.map(x=>x[i]).filter(v=>v!=null))));
  mk('cKpi',{type:'line',data:{labels:monthLabels(),datasets:[{label:'Avg KPI score %',data:ser,borderColor:D.settings.brand,backgroundColor:D.settings.brand+'22',fill:true,tension:.35},{label:'Target (100%)',data:ser.map(()=>100),borderColor:'#94a3b8',borderDash:[6,4],pointRadius:0}]},options:{scales:{y:{suggestedMin:60,suggestedMax:115}},plugins:{legend:{position:'bottom'}}}});bandChart(T)}
 function kpiTable(id,edit){const k=D.kpis[id]||[];const tw=sum(k.map(x=>+x.w))||1;
  return`<div class="tbl"><table><tr><th>KPI</th><th>Weight</th><th>Target</th><th>Actual</th><th>Achievement</th><th>Points</th></tr>${k.map((x,i)=>{const ach=x.target?x.actual/x.target*100:0;const f=v=>x.unit==='₱'?peso(v):v+(x.unit==='%'?'%':'');
   return`<tr><td><b>${esc(x.name)}</b></td><td>${x.w}%</td><td>${edit?`<input class="inp" style="width:110px" name="t${i}" type="number" step="any" value="${x.target}">`:f(x.target)}</td><td>${edit?`<input class="inp" style="width:110px" name="a${i}" type="number" step="any" value="${x.actual}">`:f(x.actual)}</td><td><div class="row" style="flex-wrap:nowrap">${barH(Math.min(ach,100),bandColor(ach))}<b>${r0(ach)}%</b></div></td><td>${(Math.min(ach,120)*x.w/tw).toFixed(1)}</td></tr>`}).join('')}</table></div>
  <div class="row mt"><b>Overall KPI score:</b> ${scoreChip(kpiScore(id))}<span class="small muted">= Σ achievement × weight (each KPI capped at 120%) · ${band(kpiScore(id))[2]}</span></div>`}
 function reviewsList(id){const r=D.reviews.filter(x=>x.emp===id).sort((a,b)=>b.date.localeCompare(a.date));return r.length?r.map(x=>`<div class="note" style="margin-bottom:8px"><div class="row"><b>${esc(x.period)}</b> ${'★'.repeat(x.rating)}${'☆'.repeat(5-x.rating)}<span class="sp"></span><span class="small muted">${fmtDate(x.date)} · ${esc(emp(x.by).name)}</span></div>👍 ${esc(x.strengths)}<br>🎯 ${esc(x.improve)}</div>`).join(''):'<div class="empty">No reviews yet.</div>'}
-function perfEmp(id){const g=D.goals.filter(x=>x.emp===id);
- return`<div class="grid g3"><div class="card span2"><h3>My scorecard — this month</h3>${kpiTable(id,false)}</div><div class="card"><h3>6-month trend</h3><div class="chartbox"><canvas id="cMe"></canvas></div></div></div>
+function perfEmp(id){const g=D.goals.filter(x=>x.emp===id);const w=wkStart(todayStr),WT=weekT(id,w);
+ const days=[...Array(7)].map((_,i)=>ds(addDays(parseD(w),i)));
+ const weekCard=Object.keys(WT).length?`<div class="card" style="margin-bottom:16px"><h3>🎯 This week's targets <span class="small muted">${fmtShort(w)} – ${fmtShort(days[6])}</span><span class="sp"></span>${weekAch(id,w)!=null?scoreChip(weekAch(id,w)):''}</h3><div class="tbl"><table class="tgt"><tr><th>Metric</th><th>Weekly target</th><th>Done so far</th><th>Progress</th>${days.map(d=>`<th>${DOW[parseD(d).getDay()]}</th>`).join('')}</tr>${metricsOf(id).map(m=>{const wa=weekA(id,w,m),x=achv(WT[m.name],wa);return`<tr><td><b class="small">${esc(m.name)}</b></td><td class="nw">${fmtV(m,WT[m.name])}</td><td class="nw">${fmtV(m,wa)}</td><td style="min-width:90px">${barH(Math.min(x||0,100),bandColor(x||0))}<div class="mini">${x!=null?r0(x)+'%':'—'}</div></td>${days.map(d=>{const a=dayA(id,d)[m.name],t=dayT(id,d)[m.name];const y=achv(t,a);return`<td class="small nw" style="color:${y!=null?bandColor(y):'inherit'}">${a!=null&&a!==''?fmtV(m,a):d>todayStr?'':'—'}</td>`}).join('')}</tr>`}).join('')}</table></div></div>`:'';
+ return weekCard+`<div class="grid g3"><div class="card span2"><h3>My scorecard — this month</h3>${kpiTable(id,false)}</div><div class="card"><h3>6-month trend</h3><div class="chartbox"><canvas id="cMe"></canvas></div></div></div>
  <div class="card mt"><b>What my score means</b><div class="mt8">${bandLegend()}</div></div>
  <div class="grid g2 mt"><div class="card"><h3>Development goals</h3>${g.map(goalBlock).join('<div style="height:12px"></div>')||'<div class="empty">None yet</div>'}</div><div class="card"><h3>Reviews & feedback</h3>${reviewsList(id)}</div></div>`}
 function perfEmpAfter(id){mk('cMe',{type:'line',data:{labels:monthLabels(),datasets:[{label:'KPI %',data:hist(id),borderColor:D.settings.brand,tension:.35}]},options:{plugins:{legend:{display:false}},scales:{y:{suggestedMin:50,suggestedMax:120}}}})}
@@ -721,7 +777,7 @@ function pgRecognition(){
  const wall=[...D.awards].sort((a,b)=>b.date.localeCompare(a.date));
  const mine=D.awards.filter(a=>a.emp===S.user);
  return`${!isMgmt()||mine.length?`<div class="card" style="margin-bottom:16px"><h3>My badges · ⭐ ${points(S.user)} points</h3><div class="row">${mine.map(a=>`<div class="badge"><span class="e">${AWARDS[a.type]?.[0]||'🏅'}</span><b>${esc(a.type)}</b><span class="small muted">${fmtShort(a.date)}</span></div>`).join('')||'<div class="muted">No badges yet — keep going!</div>'}</div></div>`:''}
- ${canGive?`<div class="card"><h3>✨ Suggested awards this month<span class="sp"></span>${B('+ Give recognition','awardNew',{},'sm')}</h3><div class="grid g4">${candidates().map(([t,L,why])=>{const given=D.awards.find(a=>a.type===t&&a.date.slice(0,7)===month);return`<div class="award"><div class="e">${AWARDS[t][0]}</div><b>${t}</b><div class="small muted">${AWARDS[t][1]} pts · ${esc(why)}</div><div class="mt8">${L.slice(0,4).map(e=>`<div class="row" style="margin-bottom:6px">${person(e.id)}<span class="sp"></span>${given?'':canManage(e.id)||isHRA()?B('Award','award',{e:e.id,t},'sm'):''}</div>`).join('')||'<div class="small muted">No one qualifies yet</div>'}</div>${given?`<div class="small mt8">✅ Awarded to <b>${esc(emp(given.emp).name)}</b></div>`:''}</div>`}).join('')}</div></div>`:''}
+ ${canGive?`<div class="card"><h3>✨ Suggested awards this month<span class="sp"></span>${B('+ Give recognition','awardNew',{},'sm')}</h3><div class="grid g4 g-aw">${candidates().map(([t,L,why])=>{const given=D.awards.find(a=>a.type===t&&a.date.slice(0,7)===month);return`<div class="award"><div class="e">${AWARDS[t][0]}</div><b>${t}</b><div class="small muted">${AWARDS[t][1]} pts · ${esc(why)}</div><div class="mt8">${L.slice(0,4).map(e=>`<div class="row" style="margin-bottom:6px">${person(e.id)}<span class="sp"></span>${given?'':canManage(e.id)||isHRA()?B('Award','award',{e:e.id,t},'sm'):''}</div>`).join('')||'<div class="small muted">No one qualifies yet</div>'}</div>${given?`<div class="small mt8">✅ Awarded to <b>${esc(emp(given.emp).name)}</b></div>`:''}</div>`}).join('')}</div></div>`:''}
  <div class="grid g3 mt"><div class="card span2"><h3>🎉 Recognition wall</h3>${wall.slice(0,12).map(a=>`<div class="flag"><span style="font-size:24px">${AWARDS[a.type]?.[0]||'🏅'}</span><div class="txt"><b>${esc(emp(a.emp).name)}</b> · ${esc(a.title||a.type)} ${chip('+'+a.points+' pts','green')}<div class="small">${esc(a.note||'')}</div><div class="small muted">${fmtShort(a.date)} · from ${esc(emp(a.by).name)}</div></div></div>`).join('')||'<div class="empty">No recognition yet.</div>'}</div>
  <div class="card"><h3>⭐ Points leaderboard</h3><div class="list">${lb.slice(0,10).map((x,i)=>`<div class="row"><b style="width:18px">${i+1}</b>${person(x.e.id)}<span class="sp"></span><b>${x.p}</b></div>`).join('')||'<div class="empty">No points yet.</div>'}</div><div class="small muted mt8">Points are optional and can be tied to rewards (gift cards, extra leave) in company policy.</div></div></div>`}
 
@@ -853,7 +909,7 @@ async function openCam(facing){const v=$('#vid');try{if(!navigator.mediaDevices?
 async function startCamera(){const ok=await openCam('user');if(!VF)return;if(!ok)return photoFallback('Live camera is blocked here (preview mode or permission denied).');
  $('#prompt').textContent='Loading face check…';setStep('live','Loading…','gray');
  try{await loadFace()}catch(e){return photoFallback('Face-check files could not load.')}
- if(!VF)return;VF.steps=Math.random()<.5?['blink','turn','center']:['turn','blink','center'];VF.started=Date.now();setStep('live','In progress','blue');loop()}
+ if(!VF)return;VF.steps=['turn','center'];VF.started=Date.now();setStep('live','In progress','blue');loop()}
 const P=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function ear(pts,i){const p=pts.slice(i,i+6);return(P(p[1],p[5])+P(p[2],p[4]))/(2*P(p[0],p[3]))}
 async function loop(){
@@ -869,11 +925,11 @@ async function loop(){
  if(step==='blink'){pr.textContent='👁️ Blink your eyes slowly';if(Math.abs(yaw)<.12)VF.base=VF.base?Math.max(VF.base*.97,e):e;if(VF.base&&e<VF.base*.72)VF.closed=true;if(VF.closed&&e>VF.base*.86){VF.phase++;VF.closed=false;toast('Blink detected ✓')}}
  else if(step==='turn'){pr.textContent=VF.turned?'↩️ Now face the camera again':'↔️ Slowly turn your head to one side';if(Math.abs(yaw)>.17)VF.turned=true;if(VF.turned&&Math.abs(yaw)<.08){VF.phase++;VF.turned=false;toast('Head movement detected ✓')}}
  else{pr.textContent='📸 Hold still…';if(Math.abs(yaw)<.09){VF.hold=(VF.hold||0)+1;if(VF.hold>=4){VF.photo=snap(v,true);VF.live=true;VF.methodUsed='live';stopCamOnly();$('#camArea').innerHTML=`<img class="selfie" src="${VF.photo}" style="margin:12px auto">`;setStep('live','Passed','green');setStep('pic','Captured','green');checkReady();return}}else VF.hold=0}
- if(VF.phase<3)setStep('live',`Step ${VF.phase+1} of 3`,'blue');VF.timer=setTimeout(loop,70)}
+ if(VF.phase<2)setStep('live',`Step ${VF.phase+1} of 2`,'blue');VF.timer=setTimeout(loop,70)}
 function snap(src,mirror){const w=src.videoWidth||src.naturalWidth,h=src.videoHeight||src.naturalHeight;const W=260,H=Math.round(W*h/w);const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');if(mirror){x.translate(W,0);x.scale(-1,1)}x.drawImage(src,0,0,W,H);return c.toDataURL('image/jpeg',.72)}
 function stopCamOnly(){if(VF?.stream){VF.stream.getTracks().forEach(t=>t.stop());VF.stream=null}}
 function photoFallback(why){if(!VF)return;stopCamOnly();$('#camArea').innerHTML='';setStep('live','Not available','amber');
- $('#fbArea').innerHTML=`<div class="note" style="margin:12px 0">${esc(why)} You can still clock ${VF.kind} with a selfie photo — it will be marked <b>Photo only</b> for review.</div><label class="upl">📷 Take a selfie<input type="file" accept="image/*" capture="user" id="selfieIn" style="display:none"></label>`}
+ $('#fbArea').innerHTML=`<div class="note" style="margin:12px 0">${esc(why)} You can still clock ${VF.kind} with a selfie photo — it will be marked <b>Photo only</b> for review.</div><div class="row" style="margin-bottom:10px">${B('🔄 Try live camera again','camRetry',{},'sm')}</div><label class="upl">📷 Take a selfie photo instead<input type="file" accept="image/*" capture="user" id="selfieIn" style="display:none"></label>`}
 async function onSelfie(file){if(!VF||!file)return;const img=new Image();img.src=URL.createObjectURL(file);await img.decode().catch(()=>{});
  let faces=-1;try{await loadFace();faces=(await faceapi.detectAllFaces(img,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.45}))).length}catch(e){}
  if(!VF)return;if(faces===0||faces>1){setStep('pic',faces?'More than one face':'No face found','red');$('#vMsg').textContent='Please retake: one clear face, good lighting.';return}
@@ -906,7 +962,7 @@ function verifyDone(){if(!VF)return;const g=VF.gps||{};const at=nowHM();
 function vView(d){const r=D.att[d.k];const v=r&&r[d.w];if(!v)return;const[id,date]=d.k.split('|');
  if(canManage(id))log('Access',`Viewed attendance proof of ${emp(id).name} (${date})`);
  openModal(`${esc(emp(id).name)} · ${d.w==='vin'?'Clock in':'Clock out'}`,`${v.photo?`<img class="selfie" src="${v.photo}">`:`<div class="empty">${v.purged?'Selfie deleted under the retention policy.':v.method==='qr'?'Verified by site QR code.':'No selfie stored (sample data).'}</div>`}
- <div class="rec" style="margin-top:14px"><dl><dt>Date & time</dt><dd>${fmtDate(date)} · ${fmt12(d.w==='vin'?r.in:r.out)} · ${esc(r.mode||'Office')}</dd><dt>Identity check</dt><dd>${v.method==='qr'?'Site QR code (rotating)':v.live?'Live check passed (blink + head movement)':v.method==='photo'?'Photo only — no live check':v.method==='gps'?'GPS only':'Not checked'}</dd>
+ <div class="rec" style="margin-top:14px"><dl><dt>Date & time</dt><dd>${fmtDate(date)} · ${fmt12(d.w==='vin'?r.in:r.out)} · ${esc(r.mode||'Office')}</dd><dt>Identity check</dt><dd>${v.method==='qr'?'Site QR code (rotating)':v.live?'Live check passed (head movement + still capture)':v.method==='photo'?'Photo only — no live check':v.method==='gps'?'GPS only':'Not checked'}</dd>
  <dt>Location</dt><dd>${v.fence==='none'?esc(v.gpsErr||'No GPS'):v.fence==='remote'?`Remote (${esc(r.mode)})${v.dist!=null?' · '+fmtDist(v.dist)+' from site':''}`:`${v.fence==='in'?'Inside':'<b style="color:var(--red)">Outside</b>'} ${esc(D.settings.officeName)} · ${fmtDist(v.dist)}${v.acc?` (±${v.acc} m)`:''}`}${v.lat?`<br><a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`:''}</dd>${r.edited?`<dt>Edited by</dt><dd>${esc(emp(r.edited).name)}${r.why?' — '+esc(r.why):''}</dd>`:''}</dl></div>`)}
 document.addEventListener('change',e=>{if(e.target.id==='selfieIn')onSelfie(e.target.files[0])});
 
@@ -922,6 +978,13 @@ const ACT={
  verify:d=>verifyStart(d.k),
  verifyMode:d=>verifyBoot('in',d.m),
  verifyDone,vView,
+ camRetry:()=>{if(!VF)return;$('#fbArea').innerHTML='';$('#camArea').innerHTML='<div class="cam"><video id="vid" playsinline muted autoplay></video><canvas id="ov"></canvas><div class="ring" id="ring"></div><div class="prompt" id="prompt">Starting camera…</div></div>';VF.phase=0;VF.hold=0;VF.turned=false;startCamera()},
+ tgtP:d=>{S.tgtP=d.p;render()},
+ tgtAuto:()=>{document.querySelectorAll('#tgtform input[name^="t|"]').forEach(inp=>{const[,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];if(m)inp.value=S.tgtP==='day'?autoDay(m):autoWeek(m)});toast('Filled from monthly targets — review, then Save')},
+ tgtCopy:()=>{const prev=S.tgtP==='day'?(()=>{let d=addDays(parseD(S.tgtD),-1);return ds(d)})():ds(addDays(parseD(wkStart(S.tgtD)),-7));let n=0;
+  document.querySelectorAll('#tgtform input[name^="t|"]').forEach(inp=>{const[,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];let src=S.tgtP==='day'?dayT(id,prev):weekT(id,prev);if(S.tgtP==='day'&&!Object.keys(src).length)src=dayT(id,ds(addDays(parseD(prev),-1)));if(m&&src[m.name]!=null){inp.value=src[m.name];n++}});toast(n?'Copied — review, then Save':'Nothing to copy from the previous period')},
+ tgtSync:()=>{const mStart=todayStr.slice(0,8)+'01';let n=0;team().filter(e=>canManage(e.id)).forEach(e=>{metricsOf(e.id).forEach(m=>{const v=[];Object.keys(D.daily).forEach(k=>{const[id,d]=k.split('|');if(id===e.id&&d>=mStart){const a=D.daily[k][m.name];if(a!=null&&a!=='')v.push(+a)}});if(v.length){m.actual=isPct(m.unit)?Math.round(avg(v)*10)/10:Math.round(sum(v)*100)/100;n++}})});log('KPI',`Updated scorecards from month-to-date daily results (${n} values)`);save();render();toast(n?'Scorecards updated with month-to-date results':'No daily results this month yet')},
+ myActSave:()=>{const k=S.user+'|'+todayStr;const A=D.daily[k]||{};metricsOf(S.user).forEach((m,i)=>{const el=document.querySelector(`[name="act_${i}"]`);if(el&&el.value!=='')A[m.name]=+el.value});D.daily[k]=A;log('Targets','Logged daily results');save();render();toast('Results saved ✅')},
  qrType:()=>{const c=$('#qrCodeIn').value;if(qrValid(c))qrPass();else{setStep('qr','Wrong or expired code','red')}},
  breakStart:()=>{const r=today();r.breaks=r.breaks||[];r.breaks.push({s:nowHM()});save();render();toast('Break started ☕')},
  breakEnd:()=>{const r=today();const b=r.breaks.find(b=>!b.e);b.e=nowHM();save();render();toast(`Break ended · ${toMin(b.e)-toMin(b.s)} min`)},
@@ -987,7 +1050,7 @@ const ACT={
  swatch:d=>{document.querySelector('[name=brand]').value=d.c;document.documentElement.style.setProperty('--brand',d.c)},
  rowAdd:()=>{RE.n++;$('#reT tbody').insertAdjacentHTML('beforeend',RE.rowH({},RE.n))},
  rowDel:(d,a)=>a.closest('tr').remove(),
- resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();S.user='e1';S.view='';toast('Demo data restored')}})
+ resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();seedTargets();S.user='e1';S.view='';toast('Demo data restored')}})
 };
 let EVP=null;
 function updSugg(){const f=$('#mform');if(!f||!$('#sugg'))return;const s=suggestNext(f.emp.value,f.issue.value);$('#sugg').innerHTML=`💡 Suggested next step: <b>${esc(s.next)}</b> <span class="muted">(${s.prior} prior record${s.prior===1?'':'s'} on this issue in 180 days)</span>`;if(f.issue.value==='Excellent Work')f.type.value='Commendation';else if(f.issue.value==='Development')f.type.value='Coaching';else if(ACC_TYPES.includes(s.next))f.type.value=s.next}
@@ -998,6 +1061,7 @@ document.addEventListener('change',e=>{
  if(e.target.id==='evIn'){const file=e.target.files[0];if(!file)return;const img=new Image();img.onload=()=>{EVP=snap(img,false);$('#evPrev').innerHTML=`<img class="selfie mt8" src="${EVP}">`};img.src=URL.createObjectURL(file);return}
  const c=e.target.dataset.chg;if(!c)return;
  if(c==='role'){S.user=e.target.value;S.tabs={};S.taskEmp='all';S.view='';S.bell=false;save();render();toast('Now viewing as '+me().name+' ('+ROLES[role()]+')')}
+ else if(c==='tgtD'){S.tgtD=e.target.value||todayStr;render()}
  else if(c==='attDate'){S.attDate=e.target.value||todayStr;render()}
  else if(c==='taskEmp'){S.taskEmp=e.target.value;render()}
  else if(c==='repDays'){S.repDays=+e.target.value;render()}
@@ -1007,9 +1071,15 @@ document.addEventListener('input',e=>{const k=e.target.dataset.inp;if(!k)return;
  if(k==='auditQ')document.querySelectorAll('#audT tr[data-q]').forEach(r=>r.style.display=r.dataset.q.includes(q)?'':'none')});
 document.addEventListener('submit',e=>{e.preventDefault();
  if(e.target.id==='mform'){const f=Object.fromEntries(new FormData(e.target));if(onSub&&onSub(f)!==false){if(onSub)closeModal();save();render()}}
+ else if(e.target.id==='tgtform'){const key=S.tgtP==='day'?S.tgtD:wkStart(S.tgtD);const store=S.tgtP==='day'?D.dtarget:D.wtarget;let n=0;
+  e.target.querySelectorAll('input[name]').forEach(inp=>{const[kind,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];if(!m)return;const k=id+'|'+key;
+   if(kind==='t'){const o=store[k]||{};if(inp.value==='')delete o[m.name];else{o[m.name]=+inp.value;n++}store[k]=o}
+   else if(kind==='a'){const o=D.daily[k]||{};if(inp.value==='')delete o[m.name];else o[m.name]=+inp.value;D.daily[k]=o}});
+  log('Targets',`Saved ${S.tgtP==='day'?'daily':'weekly'} targets for ${key} (${n} values)`);save();render();toast('Targets saved ✅')}
  else if(e.target.id==='setform'){const f=Object.fromEntries(new FormData(e.target));const s=D.settings;
   Object.assign(s,f,{strict:f.strict==='on',alMissed:f.alMissed==='on',alApprovals:f.alApprovals==='on',alTargets:f.alTargets==='on',alOverdue:f.alOverdue==='on'});['lat','lng','radius','grace','otMin','wAtt','wKpi','wTask','vl','sl','retention'].forEach(k=>{if(f[k]!==undefined)s[k]=+f[k]});
   log('Settings','Updated settings');save();render();toast('Settings saved')}});
+if(!D.tgtSeeded)seedTargets();
 render();
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.W360Android&&!/claude|artifact/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

@@ -117,6 +117,12 @@ public class MainActivity extends Activity {
 
         if (state != null) web.restoreState(state);
         else web.loadUrl(START);
+
+        // Ask for camera + location up front so clock-in works on the first try
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED || !hasLocation()) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA,
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 9);
+        }
     }
 
     private boolean hasLocation() {
