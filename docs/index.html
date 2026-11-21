@@ -323,7 +323,7 @@ footer a{color:#cbd5e1}
 
 <footer><div class="wrap">
  <div><b>WorkForce360</b> by Jessie Cajandab · Attendance, performance & productivity</div>
- <div><a href="app/">Web app</a> · <a href="#download">Download</a> · <a href="#faq">FAQ</a></div>
+ <div><a href="mailto:ajcajandab@gmail.com">ajcajandab@gmail.com</a> · <a href="app/">Web app</a> · <a href="#download">Download</a> · <a href="#faq">FAQ</a></div>
 </div></footer>
 
 <div class="lb" id="lb" onclick="this.classList.remove('show')"><img id="lbimg" alt=""></div>
@@ -331,9 +331,9 @@ footer a{color:#cbd5e1}
 <script src="app/lib/qrcode.js"></script>
 <script>
 // contact details — edit here
-const CONTACT={email:'',phone:'',facebook:''};
+const CONTACT={email:'ajcajandab@gmail.com',phone:'',facebook:'https://www.facebook.com/search/top?q=JC%20JE%20Ssie',facebookName:'JC JE Ssie'};
 (function(){
- const parts=[];if(CONTACT.email)parts.push(`<a href="mailto:${CONTACT.email}">${CONTACT.email}</a>`);if(CONTACT.phone)parts.push(`<a href="tel:${CONTACT.phone.replace(/\s/g,'')}">${CONTACT.phone}</a>`);if(CONTACT.facebook)parts.push(`<a href="${CONTACT.facebook}" target="_blank" rel="noopener">Facebook</a>`);
+ const parts=[];if(CONTACT.email)parts.push(`<a href="mailto:${CONTACT.email}">${CONTACT.email}</a>`);if(CONTACT.phone)parts.push(`<a href="tel:${CONTACT.phone.replace(/\s/g,'')}">${CONTACT.phone}</a>`);if(CONTACT.facebook)parts.push(`<a href="${CONTACT.facebook}" target="_blank" rel="noopener">Facebook: ${CONTACT.facebookName||'Facebook'}</a>`);
  if(parts.length)document.getElementById('contact-line').innerHTML='Contact Jessie Cajandab: '+parts.join(' · ');
  const cta=document.getElementById('cta-mail');
  if(CONTACT.email)cta.href=`mailto:${CONTACT.email}?subject=${encodeURIComponent('WorkForce360 demo request')}&body=${encodeURIComponent('Hi Jessie,\n\nI would like to book a WorkForce360 demo.\n\nCompany:\nNumber of employees:\nNumber of branches:\nContact number:\n')}`;
