@@ -10,6 +10,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
+import androidx.core.content.FileProvider;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -190,6 +192,43 @@ public class MainActivity extends Activity {
                 }
             } catch (Exception e) {
                 return "Could not save: " + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public String saveData(String name, String b64, String mime) {
+            try {
+                byte[] data = Base64.decode(b64, Base64.DEFAULT);
+                if (Build.VERSION.SDK_INT >= 29) {
+                    ContentValues cv = new ContentValues();
+                    cv.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    cv.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                    cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    Uri u = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                    if (u == null) return "ERR:Could not save the file";
+                    try (OutputStream o = getContentResolver().openOutputStream(u)) { o.write(data); }
+                    return u.toString();
+                } else {
+                    File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    File f = new File(dir, name);
+                    try (FileOutputStream o = new FileOutputStream(f)) { o.write(data); }
+                    return FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".files", f).toString();
+                }
+            } catch (Exception e) {
+                return "ERR:" + e.getMessage();
+            }
+        }
+
+        @JavascriptInterface
+        public String openUri(String uri, String mime) {
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(Uri.parse(uri), mime);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(Intent.createChooser(i, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return "ok";
+            } catch (Exception e) {
+                return "No app found to open this file";
             }
         }
     }
