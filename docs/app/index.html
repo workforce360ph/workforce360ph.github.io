@@ -250,6 +250,8 @@ const hm=m=>m?`${Math.floor(m/60)?Math.floor(m/60)+'h ':''}${m%60}m`:'—';
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const peso=n=>'₱'+Math.round(n).toLocaleString('en-PH');
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function isRD(e,dd){const g=dd.getDay();return g===+e.restDay||(e.restDay2!=null&&e.restDay2!==''&&+e.restDay2>=0&&g===+e.restDay2)}
+const rdTxt=e=>DOW[+e.restDay]+(e.restDay2!=null&&e.restDay2!==''&&+e.restDay2>=0?' & '+DOW[+e.restDay2]:'');
 
 /* ===================== constants ===================== */
 const ROLES={employee:'Employee',driver:'Driver',accountmgr:'Account Manager',oic:'OIC (Officer-in-Charge)',supervisor:'Supervisor',manager:'Manager',hr:'HR',admin:'Admin',executive:'Executive',owner:'Owner'};
@@ -292,8 +294,8 @@ function seed(){
   ['e3','Grace Lim','Operations Manager','Operations','manager','e16',.96,0.91,'reg',0,'Regular'],
   ['e4','Jessa Cruz','Sales Associate','Sales','employee','e13',.97,1.08,'reg',0,'Regular'],
   ['e5','Mark Villanueva','Sales Associate','Sales','employee','e13',.80,0.82,'reg',1,'Regular'],
-  ['e6','Anne Dela Peña','Sales Associate','Sales','employee','e13',.94,0.9,'close',0,'Regular'],
-  ['e7','Ryan Tan','Sales Associate','Sales','employee','e13',.90,0.76,'mid',3,'Probationary'],
+  ['e6','Anne Dela Peña','Sales Associate','Sales','employee','e17',.94,0.9,'close',0,'Regular'],
+  ['e7','Ryan Tan','Sales Associate','Sales','employee','e17',.90,0.76,'mid',3,'Probationary'],
   ['e8','Kim Bautista','Cashier','Sales','employee','e13',.99,0.88,'mid',1,'Regular'],
   ['e9','Joy Ramos','Inventory Clerk','Operations','employee','e3',.96,0.97,'reg',0,'Regular'],
   ['e10','Carlo Mendoza','Warehouse Staff','Operations','employee','e14',.85,0.66,'reg',0,'Contractual'],
@@ -315,7 +317,7 @@ function seed(){
  for(const e of emps){
   const sh=shiftBy(e.shift),st=toMin(sh.start),en=toMin(sh.end);
   for(let k=60;k>=1;k--){
-   const d=addDays(TODAY,-k);const dstr=ds(d);if(d.getDay()===e.restDay||hol.has(dstr))continue;
+   const d=addDays(TODAY,-k);const dstr=ds(d);if(isRD(e,d)||hol.has(dstr))continue;
    const key=e.id+'|'+dstr;
    if(R()<(1-e.rl)*.32){att[key]={absent:true};continue}
    const late=R()<(1-e.rl)*1.5;
@@ -329,7 +331,7 @@ function seed(){
    if((e.id==='e5'||e.id==='e10')&&R()<.06){delete rec.out;delete rec.vout}
    att[key]=rec;
   }
-  if(TODAY.getDay()!==e.restDay&&!hol.has(todayStr)&&!['e4','e10','e1','e13','e16'].includes(e.id)){
+  if(!isRD(e,TODAY)&&!hol.has(todayStr)&&!['e4','e10','e1','e13','e16'].includes(e.id)){
    const late=R()<(1-e.rl)*1.5;const mode=e.id==='e12'?'Field':'Office';
    att[e.id+'|'+todayStr]={in:toT(late?st+settings.grace+3+Math.floor(R()*30):st-25+Math.floor(R()*30)),mode,breaks:[],vin:{live:true,method:'live',fence:mode==='Field'?'remote':'in',dist:5+Math.floor(R()*100),acc:12}};
   }
@@ -424,18 +426,21 @@ function migrateOwner(){if(D.emps.find(e=>e.id==='e19'))return;D.emps.push({id:'
 function migrateAccess(){if(!D.accessReq)D.accessReq=[];D.emps.forEach(e=>{if(!e.access)e.access=e.email?'approved':'none'})}
 function stdShifts(){const L=[];for(let m=360;m<=900;m+=30){const a=toT(m),b=toT(m+540);L.push({id:'h'+a.replace(':',''),name:fmt12(a)+' – '+(m+540>=1440?'12:00 AM':fmt12(b)),start:a,end:b,brk:60})}return L}
 function migrateShifts(){if(D.shiftV===2)return;const map={reg:'h0800',mid:'h1000',close:'h1200'};const keep=D.settings.shifts.filter(x=>!map[x.id]);D.settings.shifts=[...stdShifts(),...keep.filter(x=>!/^h\d{4}$/.test(x.id))];D.emps.forEach(e=>{if(map[e.shift])e.shift=map[e.shift];else if(!D.settings.shifts.find(x=>x.id===e.shift))e.shift='h0800'});D.shiftV=2}
-function migrateEod(){if(D.eod)return;D.eod=[];let sd=7;const R2=()=>(sd=(sd*9301+49297)%233280)/233280;
- const TX={Sales:[['Served walk-in customers and closed 3 appliance sales','Followed up 5 leads from last week','Restocked display and updated price tags','Processed 2 installment applications'],['POS was slow in the afternoon','Customer asked for a model that is out of stock',''],['Call back pending leads','Push the weekend promo to regular customers','Check stock of fast-moving items']],
-  Operations:[['Picked and packed 46 orders','Received delivery and checked against PO','Cycle count of aisle B','Helped load the Mandaue delivery truck'],['Scanner battery died mid-shift','Late delivery from supplier',''],['Finish cycle count','Clear returns area','Prepare orders for morning dispatch']],
-  Admin:[['Processed leave requests','Updated employee files','Prepared payroll attendance summary','Answered staff questions on benefits'],['Two missing timesheets',''],['Finalize payroll summary','Follow up missing documents']]};
- const pick=a=>a[Math.floor(R2()*a.length)];
- D.emps.filter(e=>e.status==='Active'&&!TOP.includes(e.role)).forEach(e=>{const t=TX[e.dept]||TX.Admin;
-  for(let k=30;k>=1;k--){const d=rel(-k);if(!day(e.id,d).in)continue;if(R2()>(e.rl||.9)*.97)continue;const lead=isLead(e);
-   const done=[pick(t[0]),pick(t[0])].filter((v,i,a)=>a.indexOf(v)===i).join('. ')+'.';
-   D.eod.push({id:uid(),emp:e.id,kind:'daily',date:d,done,blockers:pick(t[1]),plan:pick(t[2])+'.',team:lead&&R2()<.4?'Check on lateness of one team member.':'',tg:tgtLines(e.id,d),at:d+'T'+toT(Math.min(1439,toMin(shiftOf(e).end)-10+Math.floor(R2()*30)))+':00',review:k>2&&R2()<.8?{by:e.mgr||'e1',at:d+'T20:00:00',comment:R2()<.3?'Good work, thanks!':''}:null})}
-  [1,2].forEach(i=>{const w=ds(addDays(parseD(wkStart(todayStr)),-7*i));if(R2()>(e.rl||.9))return;D.eod.push({id:uid(),emp:e.id,kind:'weekly',date:w,done:pick(t[0])+'. '+pick(t[0])+'.',blockers:pick(t[1]),plan:pick(t[2])+'.',tg:[],team:'',at:ds(addDays(parseD(w),isLead(e)?5:4))+'T17:30:00',review:R2()<.7?{by:e.mgr||'e1',at:ds(addDays(parseD(w),6))+'T09:00:00',comment:''}:null})})})}
+function migrateEod(){D.eod=[];D.eodV=2;let sd=11;const R2=()=>(sd=(sd*9301+49297)%233280)/233280;const C=eodCfg();
+ const PROD=[['Samsung 7kg washing machine',18990],['LG 1.5HP inverter aircon',32990],['Hisense 43" Smart TV',15490],['Stand fan 16"',1890],['Rice cooker 1.8L',2490],['2-door refrigerator',24990],['Gas range 4-burner',12990],['Microwave oven',5990],['Water dispenser',6490]];
+ const OPS=['Orders picked & packed','Deliveries completed','Customer orders processed','Stock received and shelved','Returns processed'];let orn=10230;
+ const staff=D.emps.filter(e=>e.status==='Active'&&STAFF.includes(e.role));
+ staff.forEach(e=>{for(let k=30;k>=1;k--){const d=rel(-k);if(!day(e.id,d).in)continue;if(R2()>(e.rl||.9)*.97)continue;const rows=[];
+  if(e.dept==='Sales'){const n=1+Math.floor(R2()*(e.role==='accountmgr'?2:4));for(let i=0;i<n;i++){const p=PROD[Math.floor(R2()*PROD.length)];const u=e.role==='accountmgr'?2+Math.floor(R2()*8):1+Math.floor(R2()*2);rows.push({or:R2()<.85?'OR-'+(orn++):'',units:u,desc:p[0],sales:p[1]*u})}}
+  else{const n=1+Math.floor(R2()*2);for(let i=0;i<n;i++)rows.push({or:'',units:8+Math.floor(R2()*40),desc:OPS[Math.floor(R2()*OPS.length)],sales:0})}
+  D.eod.push({id:uid(),emp:e.id,kind:'daily',date:d,cols:C.daily.cols.map(c=>({...c})),rows,totals:sumCols(C.daily.cols,rows),fcfg:C.daily.fields.map(x=>({...x})),fields:{remarks:R2()<.2?(e.dept==='Sales'?'Customer asked for a model that is out of stock.':'Scanner battery died mid-shift.'):''},
+   at:d+'T'+toT(Math.min(1439,toMin(shiftOf(e).end)-10+Math.floor(R2()*30)))+':00',review:k>2&&R2()<.8?{by:e.mgr||'e1',at:d+'T20:00:00',comment:R2()<.25?'Good work, thanks!':''}:null})}});
+ D.emps.filter(e=>e.status==='Active'&&LEADS.includes(e.role)).forEach(e=>{const T=D.emps.filter(x=>x.status==='Active'&&STAFF.includes(x.role)&&underOf(x.id,e.id));
+  [1,2,3].forEach(i=>{const w=ds(addDays(parseD(wkStart(todayStr)),-7*i));if(R2()>(e.rl||.9))return;const days=[0,1,2,3,4,5,6].map(j=>{const dd=ds(addDays(parseD(w),j));const R=T.map(x=>D.eod.find(r=>r.emp===x.id&&r.kind==='daily'&&r.date===dd)).filter(Boolean);return{d:dd,eods:R.length,units:R.reduce((a,r)=>a+(r.totals.units||0),0),sales:R.reduce((a,r)=>a+(r.totals.sales||0),0)}});
+   D.eod.push({id:uid(),emp:e.id,kind:'weekly',date:w,cols:C.weekly.cols.map(c=>({...c})),days,totals:sumCols(C.weekly.cols,days),fcfg:C.weekly.fields.map(x=>({...x})),fields:{remarks:R2()<.5?'Two lates this week; coached on Wednesday.':'',plan:'Push weekend promo and follow up pending installment applications.'},at:ds(addDays(parseD(w),5))+'T17:30:00',review:R2()<.7?{by:e.mgr||'e1',at:ds(addDays(parseD(w),6))+'T09:00:00',comment:''}:null})})})}
+function migrateTeams(){if(D.teamV===2)return;['e6','e7'].forEach(id=>{const e=D.emps.find(x=>x.id===id);if(e&&e.mgr==='e13'&&e.site==='mandaue')e.mgr='e17'});D.teamV=2}
 function migrateMisc(){D.emps.forEach(e=>{if(e.strict==null)e.strict=!!D.settings.strict});(D.ann||[]).forEach(a=>{if(!a.depts)a.depts=[];if(!a.reads)a.reads={}})}
-migrateRoles();migrateOwner();migrateAccess();migrateShifts();migrateMisc();
+migrateRoles();migrateOwner();migrateAccess();migrateShifts();migrateMisc();migrateTeams();
 migrateSites();
 function migrateKpi(){const fix=k=>{if(!k.cat)k.cat=guessCat(k.name);if(k.desc==null)k.desc=KDESC[k.name]||''};Object.values(D.kpiT).forEach(L=>L.forEach(fix));Object.values(D.kpis).forEach(L=>L.forEach(fix))}
 migrateKpi();
@@ -455,7 +460,7 @@ const autoDay=m=>isPct(m.unit)?m.target:m.unit==='₱'?Math.round(m.target/26/10
 const autoWeek=m=>isPct(m.unit)?m.target:Math.round(m.target/26*6);
 function seedTargets(){D.daily=D.daily||{};D.dtarget=D.dtarget||{};D.wtarget=D.wtarget||{};const R=mulberry32(5);
  D.emps.filter(e=>STAFF.includes(e.role)).forEach(e=>{const pf=e.pf||.9;
-  for(let k=13;k>=0;k--){const d=rel(-k),dd=parseD(d);if(dd.getDay()===+e.restDay||holidayOn(d))continue;const T={},A={};
+  for(let k=13;k>=0;k--){const d=rel(-k),dd=parseD(d);if(isRD(e,dd)||holidayOn(d))continue;const T={},A={};
    metricsOf(e.id).forEach(m=>{T[m.name]=autoDay(m);const a=m.target*(isPct(m.unit)?Math.min(1.02,pf*(.92+R()*.1)):pf*(.75+R()*.45)/26);A[m.name]=isPct(m.unit)?Math.min(100,Math.round(a*10)/10):Math.round(a)});
    D.dtarget[e.id+'|'+d]=T;const r=D.att[e.id+'|'+d];if(k>0&&r&&!r.absent)D.daily[e.id+'|'+d]=A}
   [wkStart(todayStr),wkStart(rel(-7))].forEach(w=>{const T={};metricsOf(e.id).forEach(m=>T[m.name]=autoWeek(m));D.wtarget[e.id+'|'+w]=T})});D.tgtSeeded=1}
@@ -470,14 +475,14 @@ const isExec=()=>role()==='executive';
 const isHRA=()=>['admin','hr','owner'].includes(role());
 const isAdm=()=>['admin','owner'].includes(role());
 const active=()=>D.emps.filter(e=>e.status==='Active');
+const LEADS=['supervisor','oic','manager'];
 function team(){const u=me();
  if(['admin','hr','executive','owner'].includes(u.role))return active().filter(e=>e.id!==u.id||!TOP.includes(u.role));
- if(u.role==='manager')return active().filter(e=>e.dept===u.dept&&e.id!==u.id);
- if(u.role==='supervisor')return active().filter(e=>e.mgr===u.id);
- if(u.role==='oic')return active().filter(e=>e.site===u.site&&e.id!==u.id&&OIC_SCOPE.includes(e.role));
+ if(LEADS.includes(u.role))return active().filter(e=>underOf(e.id,u.id));
  return[u]}
 function canManage(id){const u=me();if(!id||id===u.id)return false;const e=emp(id);
- if(u.role==='admin'||u.role==='hr'||u.role==='owner')return true;if(u.role==='manager')return e.dept===u.dept;if(u.role==='supervisor')return e.mgr===u.id;if(u.role==='oic')return e.site===u.site&&OIC_SCOPE.includes(e.role);return false}
+ if(u.role==='admin'||u.role==='hr'||u.role==='owner')return true;if(LEADS.includes(u.role))return underOf(id,u.id);return false}
+function underOf(id,boss){let e=emp(id),g=0;while(e&&e.mgr&&g++<20){if(e.mgr===boss)return true;e=emp(e.mgr)}return false}
 const canProxy=id=>PROXY_ROLES.includes(role())&&canManage(id);
 const shiftOf=e=>D.settings.shifts.find(s=>s.id===e.shift)||D.settings.shifts[0];
 const holidayOn=d=>D.holidays.find(h=>h.date===d);
@@ -487,7 +492,7 @@ function day(id,date){
  const dd=parseD(date);if(dd>TODAY)return{status:'—'};
  const lv=onLeave(id,date);if(lv)return{status:'On Leave',leave:lv};
  const r=D.att[id+'|'+date],hol=holidayOn(date),sh=shiftOf(e);
- if(!r){if(hol)return{status:'Holiday',hol};if(dd.getDay()===+e.restDay)return{status:'Rest Day'};if(date===todayStr)return{status:'Not In',shift:sh};return{status:'Absent',shift:sh}}
+ if(!r){if(hol)return{status:'Holiday',hol};if(isRD(e,dd))return{status:'Rest Day'};if(date===todayStr)return{status:'Not In',shift:sh};return{status:'Absent',shift:sh}}
  if(r.absent)return{status:'Absent',shift:sh};
  const st=toMin(sh.start),en=toMin(sh.end),inM=toMin(r.in);
  const late=inM>st+(+D.settings.grace),lateMin=late?inM-st:0;
@@ -531,16 +536,16 @@ function goalStatus(g){if(g.progress>=100)return['Completed','green'];const s=pa
 function suggestNext(id,issue){const prior=D.acc.filter(a=>a.emp===id&&a.issue===issue&&a.date>=rel(-180)&&LADDER.includes(a.type));if(!prior.length)return{next:'Coaching',prior:0};const mx=Math.max(...prior.map(a=>LADDER.indexOf(a.type)));return{next:mx>=3?'HR review (beyond Final Warning)':LADDER[mx+1],prior:prior.length}}
 const pendingAck=id=>D.acc.filter(a=>a.emp===id&&!a.ack&&a.status==='Open').length;
 const pendingApprovals=()=>[...D.leaves.filter(l=>l.status==='Pending'&&canManage(l.emp)),...D.reqs.filter(q=>q.status==='Pending'&&canManage(q.emp))];
-const leaveDays=l=>{let n=0;for(let d=parseD(l.from);d<=parseD(l.to);d=addDays(d,1))if(d.getDay()!==+emp(l.emp).restDay&&!holidayOn(ds(d)))n++;return n};
+const leaveDays=l=>{let n=0;for(let d=parseD(l.from);d<=parseD(l.to);d=addDays(d,1))if(!isRD(emp(l.emp),d)&&!holidayOn(ds(d)))n++;return n};
 function leaveBal(id){const y=String(TODAY.getFullYear());const used=t=>sum(D.leaves.filter(l=>l.emp===id&&l.type===t&&l.status==='Approved'&&l.from.startsWith(y)).map(leaveDays));return{vl:D.settings.vl-used('Vacation'),sl:D.settings.sl-used('Sick')}}
 const points=id=>sum(D.awards.filter(a=>a.emp===id).map(a=>+a.points||0));
 const lastKpi=id=>{const h=D.kpiHist[id]||[];return h.length?h[h.length-1]:null};
 function alerts(){
  const u=me(),s=D.settings,A=[];const T=team();const tIds=new Set(T.map(e=>e.id));
- if(!TOP.includes(u.role)){const st=eodState(u.id,todayStr);if(st==='due')A.unshift({i:'📝',t:'Your end-of-day report is due — tap to write it',v:'eod',sev:'amber'});const y=rel(-1);if(eodState(u.id,y)==='missing'&&new Date().getHours()<12)A.push({i:'📝',t:`You missed yesterday's EOD (${fmtShort(y)})`,v:'eod',sev:'red'});
-  const w=wkStart(todayStr),dow=(new Date().getDay()+6)%7+1;if(dow>=eodDue(u)&&!eodOf(u.id,'weekly',w))A.push({i:'📅',t:`Your weekly report is due ${isLead(u)?'Saturday':'Friday'}`,v:'eod',sev:'amber'})}
- if(isMgmt()&&!isExec()){const T2=team().filter(e=>e.id!==u.id&&!TOP.includes(e.role));const pr=(D.eod||[]).filter(r=>!r.review&&r.emp!==u.id&&T2.some(e=>e.id===r.emp)&&r.date>=rel(-7)).length;if(pr)A.push({i:'📝',t:`${pr} EOD report${pr>1?'s':''} waiting for your review`,v:'eod',tab:'team',sev:'blue'});
-  const ms=T2.filter(e=>eodState(e.id,rel(-1))==='missing').length;if(ms)A.push({i:'📝',t:`${ms} team member${ms>1?'s':''} didn't submit yesterday's EOD`,v:'eod',tab:'team',sev:'amber'})}
+ if(STAFF.includes(u.role)){const st=eodState(u.id,todayStr);if(st==='due')A.unshift({i:'📝',t:'Your daily report is due — tap to write it',v:'eod',sev:'amber'});const y=rel(-1);if(eodState(u.id,y)==='missing'&&new Date().getHours()<12)A.push({i:'📝',t:`You missed yesterday's report (${fmtShort(y)})`,v:'eod',sev:'red'})}
+ if(isLead(u)){const w=wkStart(todayStr),dow=(new Date().getDay()+6)%7+1,pw=ds(addDays(parseD(w),-7));if(dow>=eodDueDow&&!eodOf(u.id,'weekly',w))A.push({i:'📅',t:'Your team weekly report is due Saturday',v:'eod',sev:'amber'});if(dow<=2&&!eodOf(u.id,'weekly',pw))A.push({i:'📅',t:`Last week's team report (${fmtShort(pw)}) is missing`,v:'eod',sev:'red'})}
+ if(isMgmt()&&!isExec()){const ids=new Set(team().filter(e=>e.id!==u.id).map(e=>e.id));const pr=(D.eod||[]).filter(r=>!r.review&&ids.has(r.emp)&&r.date>=rel(-7)).length;if(pr)A.push({i:'📝',t:`${pr} report${pr>1?'s':''} waiting for your review`,v:'eod',tab:'team',sev:'blue'});
+  const ms=teamStaff(u).filter(e=>eodState(e.id,rel(-1))==='missing').length;if(ms)A.push({i:'📝',t:`${ms} team member${ms>1?'s':''} didn't submit yesterday's report`,v:'eod',tab:'team',sev:'amber'})}
  if(isHRA()){const ar=(D.accessReq||[]).filter(x=>x.status==='Pending').length;if(ar)A.push({i:'🔐',t:`${ar} app access request${ar>1?'s':''} waiting for approval`,v:'employees',tab:'access',sev:'amber'})}
  if(isMgmt()&&!isExec()){
   const pa=pendingApprovals();if(s.alApprovals&&pa.length)A.push({i:'📝',t:`${pa.length} request${pa.length>1?'s':''} waiting for your approval`,v:'attendance',tab:'requests',sev:'amber'});
@@ -616,7 +621,7 @@ function clockState(){const u=me(),t=day(u.id,todayStr),sh=shiftOf(u);let btns='
   line=`In at ${fmt12(t.in)} (${t.mode})${t.late?` · late by ${t.lateMin} min`:' · on time ✅'}${t.brk?` · break ${t.brk} min`:''}`}
  else line=`Done: ${fmt12(t.in)} – ${fmt12(t.out)} · ${t.worked.toFixed(1)} hrs worked${t.ot?` · ${hm(t.ot)} OT`:''}${t.ut?` · ${hm(t.ut)} undertime`:''}`;
  return{t,btns,line}}
-function clockBar(){if(TOP.includes(role()))return'';const{btns,line}=clockState();return`<div class="card clockcard clockbar"><div><b>My attendance today</b> · <span class="liveclock"></span><div class="small" style="opacity:.9">${line}</div></div><span class="sp" style="flex:1"></span><div class="row">${btns}${day(S.user,todayStr).out?(eodOf(S.user,'daily',todayStr)?chip('📝 EOD submitted','green'):B('📝 Write EOD','eodNew',{k:'daily'})):''}${PROXY_ROLES.includes(role())&&team().length?B('👥 Team clock-in','teamClock',{},'ghost'):''}</div></div>`}
+function clockBar(){if(TOP.includes(role()))return'';const{btns,line}=clockState();return`<div class="card clockcard clockbar"><div><b>My attendance today</b> · <span class="liveclock"></span><div class="small" style="opacity:.9">${line}</div></div><span class="sp" style="flex:1"></span><div class="row">${btns}${STAFF.includes(role())&&day(S.user,todayStr).out?(eodOf(S.user,'daily',todayStr)?chip('📝 Report submitted','green'):B('📝 Write daily report','eodNew',{k:'daily'})):''}${PROXY_ROLES.includes(role())&&team().length?B('👥 Team clock-in','teamClock',{},'ghost'):''}</div></div>`}
 
 /* ===================== pages: dashboard ===================== */
 function pgDashboard(){return isMgmt()?dashMgmt():dashEmp()}
@@ -713,41 +718,56 @@ const dueTxt=x=>{const od=x.status!=='done'&&x.due<todayStr;return od?`<span sty
 function goalBlock(g){const[s,c]=goalStatus(g);return`<div class="goal"><div class="row"><b style="flex:1">${esc(g.title)}</b>${chip(s,c)}</div>${barH(g.progress,BC[c==='green'?'green':c])}<div class="row small muted"><span>${g.progress}% · due ${fmtShort(g.due)}${g.emp===S.user?'':' · '+esc(emp(g.emp).name)}</span><span class="sp"></span>${(g.emp===S.user||canManage(g.emp))?B('Update','goalUpd',{id:g.id},'sm ghost'):''}</div>${g.note?`<div class="small muted">📝 ${esc(g.note)}</div>`:''}</div>`}
 
 /* ===================== EOD reports ===================== */
-const LEADS=['supervisor','oic','manager'];
 const isLead=e=>LEADS.includes(e.role);
-const eodDue=e=>isLead(e)?6:5;
+const EODDEF={daily:{cols:[{k:'or',label:'OR number',type:'text',opt:'1'},{k:'units',label:'Units',type:'number',opt:''},{k:'desc',label:'Description',type:'text',opt:''},{k:'sales',label:'Sales (₱)',type:'money',opt:''}],fields:[{k:'remarks',label:'Remarks',type:'text',opt:'1'}]},
+ weekly:{cols:[{k:'units',label:'Units / orders',type:'number',opt:'1'},{k:'sales',label:'Sales (₱)',type:'money',opt:'1'}],fields:[{k:'remarks',label:'Issues / remarks',type:'text',opt:'1'},{k:'plan',label:'Plan for next week',type:'text',opt:'1'}]}};
+const eodCfg=()=>D.eodCfg||(D.eodCfg=JSON.parse(JSON.stringify(EODDEF)));
+const isNum=c=>c.type==='number'||c.type==='money';
+const fmtE=(c,v)=>v==null||v===''?'—':c.type==='money'?'₱'+(+v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}):isNum(c)?(+v).toLocaleString('en-PH',{maximumFractionDigits:2}):String(v);
+const eodDueDow=6; // weekly due Saturday
 const eodOf=(id,kind,date)=>(D.eod||[]).find(r=>r.emp===id&&r.kind===kind&&r.date===date);
-const eodExpected=(id,d)=>{const x=day(id,d);return !!x.in};
+const eodExpected=(id,d)=>{const e=emp(id);return !!e&&STAFF.includes(e.role)&&!!day(id,d).in};
 function eodState(id,d){const r=eodOf(id,'daily',d);if(r)return r.review?'reviewed':'submitted';if(!eodExpected(id,d))return'off';const x=day(id,d);if(d<todayStr)return'missing';return x.out||nowMin()>toMin(shiftOf(emp(id)).end)+60?'due':'open'}
 const EODST={reviewed:['✓ Reviewed','green'],submitted:['Submitted','blue'],missing:['Missing','red'],due:['Due now','amber'],open:['Working','gray'],off:['Not working','gray']};
 function eodRate(id,n=30){let exp=0,got=0;for(let k=n;k>=1;k--){const d=rel(-k);if(eodExpected(id,d)){exp++;if(eodOf(id,'daily',d))got++}}return exp?got/exp*100:null}
-function teamSnap(u,d){const T=team().filter(e=>e.id!==u.id&&!TOP.includes(e.role));const X=T.map(e=>day(e.id,d));return{n:T.length,present:X.filter(x=>x.in).length,late:X.filter(x=>x.late).length,absent:X.filter(x=>x.status==='Absent').length,leave:X.filter(x=>x.status==='On Leave').length,eod:T.filter(e=>eodOf(e.id,'daily',d)).length}}
-function weekSnap(u,w){const T=team().filter(e=>e.id!==u.id&&!TOP.includes(e.role));let exp=0,got=0,late=0,abs=0;for(let i=0;i<7;i++){const d=ds(addDays(parseD(w),i));if(d>todayStr)break;T.forEach(e=>{const x=day(e.id,d);if(x.late)late++;if(x.status==='Absent')abs++;if(x.in){exp++;if(eodOf(e.id,'daily',d))got++}})}return{n:T.length,late,absent:abs,eodRate:exp?Math.round(got/exp*100):null}}
-function tgtLines(id,d){const T=dayT(id,d),A=dayA(id,d);return metricsOf(id).filter(m=>T[m.name]!=null||A[m.name]!=null).map(m=>({name:m.name,unit:m.unit,t:T[m.name],a:A[m.name]}))}
-function wkTgtLines(id,w){const T=weekT(id,w);return metricsOf(id).filter(m=>T[m.name]!=null).map(m=>({name:m.name,unit:m.unit,t:T[m.name],a:weekA(id,w,m)}))}
-const nf=v=>v==null||v===''?'—':(+v).toLocaleString('en-PH',{maximumFractionDigits:1});
-const tgtTxt=L=>L.map(x=>`${x.name}: ${nf(x.a)} / ${nf(x.t)}${x.t&&x.a!=null?` (${r0(x.a/x.t*100)}%)`:''}`).join(' · ');
-function eodView(r){const wk=r.kind==='weekly';const sn=r.snap;
+const teamStaff=u=>team().filter(e=>STAFF.includes(e.role)&&e.id!==u.id);
+const teamLeads=u=>team().filter(e=>LEADS.includes(e.role)&&e.id!==u.id);
+function sumCols(cols,rows){const t={};cols.filter(isNum).forEach(c=>t[c.k]=rows.reduce((a,r)=>a+(+r[c.k]||0),0));return t}
+function eodTable(cols,rows,tot,first){return`<div class="tbl"><table><tr>${first?`<th>${first[0]}</th>`:''}${cols.map(c=>`<th${isNum(c)?' style="text-align:right"':''}>${esc(c.label)}</th>`).join('')}</tr>
+ ${rows.map(r=>`<tr>${first?`<td class="nw">${first[1](r)}</td>`:''}${cols.map(c=>`<td${isNum(c)?' style="text-align:right" class="nw"':''}>${esc(fmtE(c,r[c.k]))}</td>`).join('')}</tr>`).join('')}
+ <tr style="font-weight:700;background:#f8fafc">${first?'<td>Total</td>':''}${cols.map((c,i)=>`<td${isNum(c)?' style="text-align:right" class="nw"':''}>${isNum(c)?esc(fmtE(c,tot[c.k])):(!first&&i===0?'Total':'')}</td>`).join('')}</tr></table></div>`}
+function eodView(r){const wk=r.kind==='weekly';
  return`<div class="rec" style="border-left-color:${wk?'#7c3aed':'var(--brand)'}"><div class="row">${person(r.emp)}<span class="sp"></span>${chip(wk?'Weekly · week of '+fmtShort(r.date):'Daily · '+fmtDay(r.date),wk?'purple':'blue')} ${r.review?chip('✓ Reviewed','green'):chip('Waiting for review','amber')}</div>
- <dl>${(r.tg||[]).length?`<dt>${wk?'Week':'Today'}'s targets</dt><dd>${esc(tgtTxt(r.tg))}</dd>`:''}<dt>${wk?'Highlights':'What I did'}</dt><dd class="annbody">${esc(r.done)}</dd>${r.blockers?`<dt>${wk?'Issues':'Problems / blockers'}</dt><dd class="annbody">${esc(r.blockers)}</dd>`:''}<dt>${wk?'Plan for next week':'Plan for tomorrow'}</dt><dd class="annbody">${esc(r.plan)}</dd>
- ${sn?`<dt>Team ${wk?'this week':'today'}</dt><dd>${wk?`${sn.n} people · ${sn.late} lates · ${sn.absent} absences · EOD submission ${sn.eodRate??'—'}%`:`${sn.present}/${sn.n} present · ${sn.late} late · ${sn.absent} absent · ${sn.leave} on leave · ${sn.eod} EODs in`}</dd>`:''}${r.team?`<dt>Team issues</dt><dd class="annbody">${esc(r.team)}</dd>`:''}
+ <div class="mt8">${wk?eodTable(r.cols,r.days,r.totals,['Day',x=>fmtDay(x.d)+(x.eods!=null?` <span class="muted small">(${x.eods} EOD${x.eods===1?'':'s'})</span>`:'')]):eodTable(r.cols,r.rows,r.totals)}</div>
+ <dl>${(r.fcfg||[]).filter(f=>(r.fields||{})[f.k]!==''&&(r.fields||{})[f.k]!=null).map(f=>`<dt>${esc(f.label)}</dt><dd class="annbody">${esc(r.fields[f.k])}</dd>`).join('')}
  ${r.review?`<dt>Review</dt><dd>${r.review.comment?`“${esc(r.review.comment)}” — `:''}${esc(emp(r.review.by).name)}, ${new Date(r.review.at).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</dd>`:''}</dl>
  <div class="row"><span class="small muted">Submitted ${new Date(r.at).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span><span class="sp"></span>${!r.review&&r.emp!==S.user&&canManage(r.emp)&&!isExec()?B('✓ Mark reviewed','eodReview',{id:r.id},'sm'):''}</div></div>`}
-function pgEod(){const u=me(),top=TOP.includes(u.role);
- const tl=[...(!top?[['mine','My reports']]:[]),...(isMgmt()?[['team','Team daily'],['teamwk','Team weekly']]:[])];const tab=curTab(tl[0][0]);
+function pgEod(){const u=me();const staff=STAFF.includes(u.role),lead=isLead(u);
+ const showWk=isHRA()||TOP.includes(u.role)||teamLeads(u).length>0;
+ const tl=[...(staff||lead?[['mine','My reports']]:[]),...(isMgmt()?[['team','Team daily'],...(showWk?[['teamwk','Team weekly']]:[])]:[])];const tab=curTab(tl[0][0]);
  let body='';
- if(tab==='mine'){const td=eodOf(u.id,'daily',todayStr),w=wkStart(todayStr),wr=eodOf(u.id,'weekly',w),dow=(new Date().getDay()+6)%7+1;const L=(D.eod||[]).filter(r=>r.emp===u.id).sort((a,b)=>(b.at||'').localeCompare(a.at||''));
-  body=`<div class="grid g2"><div class="card"><h3>📝 Today's EOD</h3>${td?`<div>${chip(td.review?'✓ Reviewed':'Submitted','green')} at ${new Date(td.at).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'})}</div>`:eodExpected(u.id,todayStr)?`<div class="small muted" style="margin-bottom:10px">Write it before you leave: what you did, any problems, and your plan for tomorrow. Today's target results are added automatically.</div>${B("✍️ Write today's EOD",'eodNew',{k:'daily'})}`:`<div class="small muted">Clock in first — the daily EOD opens once you're at work today.</div>`}</div>
-  <div class="card"><h3>📅 Weekly report · week of ${fmtShort(w)}</h3>${wr?`<div>${chip(wr.review?'✓ Reviewed':'Submitted','green')}</div>`:`<div class="small muted" style="margin-bottom:10px">Due every <b>${isLead(u)?'Saturday':'Friday'}</b>. Your daily EODs and this week's numbers are pulled in — you add the highlights, issues and next week's plan.</div>${B('✍️ Write weekly report','eodNew',{k:'weekly'},dow>=eodDue(u)?'':'ghost')}`}</div></div>
-  <div class="row mt"><b>My report history</b><span class="sp"></span><span class="small muted">Submission rate (30 days): <b>${eodRate(u.id)==null?'—':r0(eodRate(u.id))+'%'}</b></span></div>${L.slice(0,20).map(eodView).join('')||'<div class="card empty mt">No reports yet.</div>'}`}
- else if(tab==='team'){const d=S.eodDate||todayStr;const T=team().filter(e=>!TOP.includes(e.role)&&e.id!==u.id);const ord=['missing','due','submitted','reviewed','open','off'];const st=T.map(e=>({e,s:eodState(e.id,d)})).sort((a,b)=>ord.indexOf(a.s)-ord.indexOf(b.s));const cnt=k=>st.filter(x=>x.s===k).length;
-  body=`<div class="card"><div class="row"><input type="date" class="inp" value="${d}" max="${todayStr}" data-chg="eodDate"><span class="sp"></span>${chip(cnt('submitted')+cnt('reviewed')+' submitted','blue')} ${chip(cnt('reviewed')+' reviewed','green')} ${chip(cnt('missing')+cnt('due')+' missing','red')}${cnt('submitted')&&!isExec()?' '+B('✓ Review all','eodReviewAll',{d},'sm ghost'):''}</div></div>
-  ${st.map(({e,s})=>{const r=eodOf(e.id,'daily',d);return r?eodView(r):`<div class="card mt"><div class="row">${person(e.id)}<span class="sp"></span>${chip(...EODST[s])}</div></div>`}).join('')}`}
- else{const w=S.eodWeek||wkStart(todayStr);const T=team().filter(e=>!TOP.includes(e.role)&&e.id!==u.id);const wks=[0,1,2,3].map(i=>ds(addDays(parseD(wkStart(todayStr)),-7*i)));
+ if(tab==='mine'){const L=(D.eod||[]).filter(r=>r.emp===u.id).sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+  if(staff){const td=eodOf(u.id,'daily',todayStr);
+   body=`<div class="card"><h3>📝 Today's sales / order report</h3>${td?`<div>${chip(td.review?'✓ Reviewed':'Submitted','green')} at ${new Date(td.at).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'})} · ${eodCfg().daily.cols.filter(isNum).map(c=>`${esc(c.label)}: <b>${fmtE(c,td.totals[c.k])}</b>`).join(' · ')}</div>`:eodExpected(u.id,todayStr)?`<div class="small muted" style="margin-bottom:10px">List each sale or order: OR number, units, description and amount. Totals are added up for you.</div>${B("✍️ Write today's report",'eodNew',{k:'daily'})}`:`<div class="small muted">Clock in first — the daily report opens once you're at work today.</div>`}</div>
+   <div class="row mt"><b>My report history</b><span class="sp"></span><span class="small muted">Submission rate (30 days): <b>${eodRate(u.id)==null?'—':r0(eodRate(u.id))+'%'}</b></span></div>`}
+  else{const w=wkStart(todayStr),wr=eodOf(u.id,'weekly',w),pw=ds(addDays(parseD(w),-7)),pr=eodOf(u.id,'weekly',pw);
+   body=`<div class="card"><h3>📅 Team weekly sales report</h3><div class="small muted" style="margin-bottom:10px">Your team's units/orders and sales for each day, added up from their daily reports. Due every <b>Saturday</b>.</div>
+   <div class="row">${wr?chip('This week ('+fmtShort(w)+') submitted','green'):B('✍️ This week · '+fmtShort(w),'eodNew',{k:'weekly',w})}${pr?'':B('Last week · '+fmtShort(pw)+' (missing)','eodNew',{k:'weekly',w:pw},'ghost')}</div></div>
+   <div class="row mt"><b>My weekly reports</b></div>`}
+  body+=L.slice(0,20).map(eodView).join('')||'<div class="card empty mt">No reports yet.</div>'}
+ else if(tab==='team'){const d=S.eodDate||todayStr;const T=teamStaff(u);const ord=['missing','due','submitted','reviewed','open','off'];const st=T.map(e=>({e,s:eodState(e.id,d)})).sort((a,b)=>ord.indexOf(a.s)-ord.indexOf(b.s));const cnt=k=>st.filter(x=>x.s===k).length;
+  const R=T.map(e=>eodOf(e.id,'daily',d)).filter(Boolean);const tc=eodCfg().daily.cols.filter(isNum);
+  body=`<div class="card"><div class="row"><input type="date" class="inp" value="${d}" max="${todayStr}" data-chg="eodDate"><span class="sp"></span>${chip(cnt('submitted')+cnt('reviewed')+' submitted','blue')} ${chip(cnt('reviewed')+' reviewed','green')} ${chip(cnt('missing')+cnt('due')+' missing','red')}${cnt('submitted')&&!isExec()?' '+B('✓ Review all','eodReviewAll',{d},'sm ghost'):''}</div>
+  ${R.length?`<div class="small mt8">Team total: ${tc.map(c=>`${esc(c.label)} <b>${fmtE(c,R.reduce((a,r)=>a+(+(r.totals||{})[c.k]||0),0))}</b>`).join(' · ')}</div>`:''}</div>
+  ${st.map(({e,s})=>{const r=eodOf(e.id,'daily',d);return r?eodView(r):`<div class="card mt"><div class="row">${person(e.id)}<span class="sp"></span>${chip(...EODST[s])}</div></div>`}).join('')||'<div class="card empty mt">No staff under you.</div>'}`}
+ else{const w=S.eodWeek||wkStart(todayStr);const T=teamLeads(u);const wks=[0,1,2,3].map(i=>ds(addDays(parseD(wkStart(todayStr)),-7*i)));
   body=`<div class="card"><div class="row"><select class="inp" data-chg="eodWeek">${wks.map(x=>`<option value="${x}" ${x===w?'selected':''}>Week of ${fmtShort(x)}</option>`).join('')}</select><span class="sp"></span>${chip(T.filter(e=>eodOf(e.id,'weekly',w)).length+' of '+T.length+' submitted','blue')}</div></div>
-  ${T.map(e=>{const r=eodOf(e.id,'weekly',w);return r?eodView(r):`<div class="card mt"><div class="row">${person(e.id)}<span class="sp"></span>${chip(w<wkStart(todayStr)?'Missing':'Not yet — due '+(isLead(e)?'Sat':'Fri'),w<wkStart(todayStr)?'red':'gray')}</div></div>`}).join('')}`}
- return`<div class="row">${tl.length>1?tabs(tl,tl[0][0]):''}<span class="sp"></span>${isMgmt()?B('⬇ Download CSV','csv',{k:'eod'},'ghost'):''}</div><div class="mt">${body}</div>`}
-/* ===================== team analytics ===================== */
+  ${T.map(e=>{const r=eodOf(e.id,'weekly',w);return r?eodView(r):`<div class="card mt"><div class="row">${person(e.id)}<span class="sp"></span>${chip(w<wkStart(todayStr)?'Missing':'Not yet — due Saturday',w<wkStart(todayStr)?'red':'gray')}</div></div>`}).join('')||'<div class="card empty mt">No supervisors, OICs or managers under you.</div>'}`}
+ return`<div class="row">${tl.length>1?tabs(tl,tl[0][0]):''}<span class="sp"></span>${isMgmt()&&tab!=='mine'?B('⬇ Download CSV','csv',{k:tab==='teamwk'?'eodwk':'eod'},'ghost'):''}</div><div class="mt">${body}</div>`}
+function eodLineH(cols,i){return`<div class="recard" data-i="${i}"><button type="button" class="btn sm ghost rdel" data-act="rowDel" aria-label="Remove line">✕</button><div class="small muted" style="margin-bottom:4px">Line ${i+1}</div><div class="rgrid">${cols.map(c=>`<div class="fld ${c.k==='desc'?'full':''}"><label>${esc(c.label)}${c.opt?' <span class="muted">(optional)</span>':''}</label><input class="inp" style="width:100%" name="L${i}_${c.k}" ${isNum(c)?'type="number" step="any" inputmode="decimal" min="0"':'type="text"'}></div>`).join('')}</div></div>`}
+function eodCalc(){const f=$('#mform');if(!f||!EODF)return;const out={};EODF.cols.filter(isNum).forEach(c=>{let t=0;f.querySelectorAll(`input[name$="_${c.k}"]`).forEach(x=>{if(/^[LW]\d+_/.test(x.name))t+=+x.value||0});out[c.k]=t});const el=$('#eodTot');if(el)el.innerHTML=EODF.cols.filter(isNum).map(c=>`<span>${esc(c.label)}: <b>${fmtE(c,out[c.k])}</b></span>`).join(' · ')||'—'}
+let EODF=null;
+/* ===================== team analytics ===================== *//* ===================== team analytics ===================== */
 function downline(id){const out=[],q=[id];while(q.length){const m=q.shift();D.emps.filter(e=>e.mgr===m&&e.status==='Active').forEach(e=>{if(!out.includes(e)){out.push(e);q.push(e.id)}})}return out}
 const canAll=()=>['owner','executive','admin','hr'].includes(role());
 function anList(){const sc=canAll()?(S.anScope||'all'):'team';let T=(sc==='all'?active():downline(S.user)).filter(e=>!TOP.includes(e.role)&&e.id!==S.user);
@@ -818,7 +838,7 @@ function reqTable(L){L=[...L].sort((a,b)=>(a.status==='Pending'?0:1)-(b.status==
  ${L.map(x=>{const lv=!x.kind;return`<tr><td>${person(x.emp)}</td><td>${lv?chip(x.type+' leave','purple'):chip(x.kind,x.kind==='Overtime'?'blue':'amber')}</td><td class="nw">${lv?`${fmtShort(x.from)}${x.to!==x.from?' – '+fmtShort(x.to):''} (${leaveDays(x)}d)`:fmtShort(x.date)}</td><td>${lv?'':x.kind==='Overtime'?`<b>${x.hours} hrs</b> · `:`<b>${esc(x.sub)}</b>${x.in?' · in '+fmt12(x.in):''}${x.out?' · out '+fmt12(x.out):''} · `}${esc(x.reason)}${x.note?`<div class="small muted">Note: ${esc(x.note)}</div>`:''}${x.by?`<div class="small muted">${x.status} by ${esc(emp(x.by).name)}</div>`:''}</td><td>${stChip(x.status)}</td><td class="nw">${x.status==='Pending'&&canManage(x.emp)?B('Approve','decide',{id:x.id,s:'Approved'},'sm green')+' '+B('Reject','decide',{id:x.id,s:'Rejected'},'sm ghost'):''}${x.status==='Pending'&&x.emp===S.user?B('Cancel','reqCancel',{id:x.id},'sm ghost'):''}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">No requests.</td></tr>'}</table></div></div>`}
 function scheduleView(L){const days=[...Array(7)].map((_,i)=>rel(i));
  return`<div class="card"><h3>Next 7 days<span class="sp"></span>${isHRA()?B('Edit shifts','shiftEdit',{},'sm ghost'):''}</h3><div class="tbl"><table><tr><th>Employee</th>${days.map(d=>`<th>${fmtDay(d)}</th>`).join('')}</tr>
- ${L.map(e=>`<tr><td>${person(e.id)}</td>${days.map(d=>{const dd=parseD(d),h=holidayOn(d),lv=onLeave(e.id,d),sh=shiftOf(e);return`<td class="small nw">${lv?chip('Leave','purple'):h?chip('🎉 '+h.name.split(' ')[0],'teal'):dd.getDay()===+e.restDay?chip('Rest day','gray'):`<b>${esc(sh.name)}</b><br><span class="muted">${fmt12(sh.start)}–${fmt12(sh.end)}</span>`}</td>`}).join('')}</tr>`).join('')}</table></div>
+ ${L.map(e=>`<tr><td>${person(e.id)}</td>${days.map(d=>{const dd=parseD(d),h=holidayOn(d),lv=onLeave(e.id,d),sh=shiftOf(e);return`<td class="small nw">${lv?chip('Leave','purple'):h?chip('🎉 '+h.name.split(' ')[0],'teal'):isRD(e,dd)?chip('Rest day','gray'):`<b>${esc(sh.name)}</b><br><span class="muted">${fmt12(sh.start)}–${fmt12(sh.end)}</span>`}</td>`}).join('')}</tr>`).join('')}</table></div>
  <div class="small muted mt8">Holidays: ${D.holidays.filter(h=>h.date>=todayStr).slice(0,4).map(h=>`${fmtShort(h.date)} ${esc(h.name)}`).join(' · ')}</div></div>`}
 function attEmp(){
  const u=me(),s=attSum(u.id),b=leaveBal(u.id);const tab=curTab('log');const rows=[];
@@ -988,10 +1008,15 @@ function repRows(kind,TT){const n=S.repDays,T=TT||team().filter(e=>!TOP.includes
   for(let k=n-1;k>=0;k--){const d=rel(-k);T.forEach(e=>{const x=day(e.id,d);if(['—'].includes(x.status))return;const v=x.vin||{};r.push([d,e.name,e.dept,x.shift?x.shift.name:'',x.status,x.mode||'',x.in||'',x.out||'',((x.r&&x.r.breaks)||[]).map(b=>b.s).join(' / '),((x.r&&x.r.breaks)||[]).map(b=>b.e||'on break').join(' / '),x.brk||0,x.worked!=null?x.worked.toFixed(2):'',x.lateMin||0,x.ut||0,x.ot||0,x.in?(v.live?'Live':v.method||'n/a'):'',x.in?(v.fence||'n/a'):'',v.dist??''])})}return r}
  if(kind==='requests'){const r=[['Filed','Employee','Type','Date / from','To','Days/Hours','Reason','Status','Decided by']];[...D.leaves,...D.reqs].filter(x=>T.some(e=>e.id===x.emp)).forEach(x=>r.push([x.filed,emp(x.emp).name,x.kind||x.type+' leave',x.date||x.from,x.to||'',x.kind?x.hours||'':leaveDays(x),x.reason,x.status,x.by?emp(x.by).name:'']));return r}
  if(kind==='coaching'){const r=[['Date','Employee','Type','Issue','Root cause','Details','Agreed actions','Target','Follow-up','Status','Acknowledged','Signed on','Owner','Outcome']];D.acc.filter(x=>T.some(e=>e.id===x.emp)).forEach(a=>r.push([a.date,emp(a.emp).name,a.type,a.issue,a.root||'',a.details,a.plan,a.target||'',a.follow,a.status,a.ack?'Yes':'No',a.sigAt?a.sigAt.slice(0,16).replace('T',' '):'',emp(a.by).name,a.outcome||'']));return r}
- if(kind==='eod'){const r=[['Type','Date / week of','Employee','Position','Department','Targets','Done / highlights','Problems / issues','Plan','Team issues','Submitted at','Reviewed by','Review comment']];(D.eod||[]).filter(x=>x.date>=rel(-(n-1)-7)&&T.some(e=>e.id===x.emp)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(x=>{const e=emp(x.emp);r.push([x.kind==='weekly'?'Weekly':'Daily',x.date,e.name,e.position,e.dept,tgtTxt(x.tg||[]),x.done,x.blockers||'',x.plan,x.team||'',(x.at||'').slice(0,16).replace('T',' '),x.review?emp(x.review.by).name:'',x.review?x.review.comment:''])});return r}
+ if(kind==='eod'){const C=eodCfg().daily;const r=[['Date','Employee','Position','Department','Branch','Line',...C.cols.map(c=>c.label),...C.fields.map(f=>f.label),'Submitted at','Reviewed by','Review comment']];
+  (D.eod||[]).filter(x=>x.kind==='daily'&&x.date>=from&&T.some(e=>e.id===x.emp)).sort((a,b)=>a.date.localeCompare(b.date)||a.emp.localeCompare(b.emp)).forEach(x=>{const e=emp(x.emp);(x.rows||[]).forEach((row,i)=>r.push([x.date,e.name,e.position,e.dept,homeSite(e).name,i+1,...C.cols.map(c=>row[c.k]??''),...C.fields.map(f=>i===0?(x.fields||{})[f.k]||'':''),i===0?(x.at||'').slice(0,16).replace('T',' '):'',i===0&&x.review?emp(x.review.by).name:'',i===0&&x.review?x.review.comment:'']));
+   r.push([x.date,e.name,'','','','TOTAL',...C.cols.map(c=>isNum(c)?(x.totals||{})[c.k]??'':''),...C.fields.map(()=>''),'','',''])});return r}
+ if(kind==='eodwk'){const C=eodCfg().weekly;const r=[['Week of','Submitted by','Role','Day','Date','Team EODs',...C.cols.map(c=>c.label),...C.fields.map(f=>f.label),'Reviewed by']];
+  (D.eod||[]).filter(x=>x.kind==='weekly'&&x.date>=wkStart(from)&&T.some(e=>e.id===x.emp)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(x=>{const e=emp(x.emp);(x.days||[]).forEach((o,i)=>r.push([x.date,e.name,ROLES[e.role],DOW[parseD(o.d).getDay()],o.d,o.eods??'',...C.cols.map(c=>o[c.k]??''),...C.fields.map(f=>i===0?(x.fields||{})[f.k]||'':''),i===0&&x.review?emp(x.review.by).name:'']));
+   r.push([x.date,e.name,'','TOTAL','','',...C.cols.map(c=>isNum(c)?(x.totals||{})[c.k]??'':''),...C.fields.map(()=>''),''])});return r}
  if(kind==='recognition'){const r=[['Date','Employee','Award','Points','Note','Given by']];D.awards.forEach(a=>r.push([a.date,emp(a.emp).name,a.type,a.points,a.note||'',emp(a.by).name]));return r}}
 const toCSV=rows=>rows.map(r=>r.map(c=>{c=String(c??'');return/[",\n]/.test(c)?`"${c.replace(/"/g,'""')}"`:c}).join(',')).join('\n');
-const REPORTS=[['scorecard','📊','Employee scorecard','Attendance, KPI, tasks, coaching and overall score per employee'],['attendance','🕘','Attendance detail','Every day per employee: times, breaks, late, undertime, OT and verification'],['requests','📝','Leave, correction & OT requests','All requests with status and approver'],['coaching','🛡️','Coaching log','Records, root causes, actions, targets and outcomes'],['recognition','🏆','Recognition','Awards and points'],['eod','📝','EOD reports','Daily and weekly reports: what was done, blockers, plans, review status']];
+const REPORTS=[['scorecard','📊','Employee scorecard','Attendance, KPI, tasks, coaching and overall score per employee'],['attendance','🕘','Attendance detail','Every day per employee: times, breaks, late, undertime, OT and verification'],['requests','📝','Leave, correction & OT requests','All requests with status and approver'],['coaching','🛡️','Coaching log','Records, root causes, actions, targets and outcomes'],['recognition','🏆','Recognition','Awards and points'],['eod','📝','Daily sales / order reports','Every line employees reported: OR number, units, description, sales and totals'],['eodwk','📅','Team weekly reports','Weekly team units and sales per day from supervisors, OICs and managers']];
 function pgReports(){const n=S.repDays;const T=team().filter(e=>!TOP.includes(e.role));
  return`<div class="row" style="margin-bottom:16px"><b>Period:</b><select class="inp" data-chg="repDays">${[7,14,30,60].map(d=>`<option value="${d}" ${d==n?'selected':''}>Last ${d} days</option>`).join('')}</select><span class="small muted">Reports reconcile with the records on each page.</span></div>
  <div class="grid g3">${REPORTS.map(([k,i,t,d])=>`<div class="card"><h3>${i} ${t}</h3><div class="small muted" style="min-height:36px">${d}</div><div class="row mt8">${B('⬇ Download CSV','csv',{k},'sm')}${B('Copy','csvCopy',{k},'sm ghost')}</div></div>`).join('')}</div>
@@ -1032,6 +1057,9 @@ function pgSettings(){const s=D.settings;const adm=isAdm();const pre=['#0f766e',
   ${fld('Keep selfies for (days)',`<input type="number" min="7" name="retention" value="${s.retention}">`)}<div class="small muted">Location and photo are captured only at clock-in/out — never continuous tracking. Older selfies are deleted automatically.</div></div>
  <div class="card"><h3>📈 KPI templates</h3><div class="small muted" style="margin-bottom:10px">KPI sets and weights per department — change them without redesigning the app.</div>${Object.entries(D.kpiT).map(([d,k])=>`<div class="flag"><div class="txt"><b>${esc(d)}</b><div class="small" style="margin-top:4px">${k.map(x=>`<div style="margin-bottom:4px">${esc(x.name)} <b>${x.w}%</b> <span class="kcat">${esc(x.cat||'')}</span> <span class="muted">· target ${x.unit==='₱'?peso(x.target):x.target+(x.unit==='%'?'%':'')}</span></div>`).join('')}</div></div>${B('Edit','kpiTEdit',{d},'sm ghost')}</div>`).join('')}<div class="mt8">${B('+ Add department','deptNew',{},'sm ghost')}</div></div>
  <div class="card"><h3>⚡ Overall score formula</h3><div class="f3">${fld('Attendance %',`<input type="number" name="wAtt" value="${s.wAtt}">`)}${fld('KPI %',`<input type="number" name="wKpi" value="${s.wKpi}">`)}${fld('Tasks %',`<input type="number" name="wTask" value="${s.wTask}">`)}</div><div class="small muted">Weights are normalized. Bands: ${BANDS.map(b=>b[1]).join(' · ')}.</div></div>
+ ${isHRA()?`<div class="card"><h3>📝 EOD report forms</h3><div class="small muted" style="margin-bottom:10px">Choose what employees and team leads report. Changes apply to new reports.</div>
+ <div class="flag"><div class="txt"><b>Daily report (employees)</b><div class="small muted">${eodCfg().daily.cols.map(c=>esc(c.label)).join(' · ')}${eodCfg().daily.fields.length?' + '+eodCfg().daily.fields.map(f=>esc(f.label)).join(', '):''}</div></div></div><div class="row">${B('Columns','eodCfgEdit',{w:'daily',p:'cols'},'sm ghost')}${B('Extra questions','eodCfgEdit',{w:'daily',p:'fields'},'sm ghost')}</div>
+ <div class="flag mt"><div class="txt"><b>Weekly report (supervisors, OICs, managers)</b><div class="small muted">Day · ${eodCfg().weekly.cols.map(c=>esc(c.label)).join(' · ')}${eodCfg().weekly.fields.length?' + '+eodCfg().weekly.fields.map(f=>esc(f.label)).join(', '):''}</div></div></div><div class="row">${B('Columns','eodCfgEdit',{w:'weekly',p:'cols'},'sm ghost')}${B('Extra questions','eodCfgEdit',{w:'weekly',p:'fields'},'sm ghost')}</div></div>`:''}
  <div class="card"><h3>🔔 Alerts</h3>${[['alMissed','Missed clock-in / clock-out'],['alApprovals','Pending approvals'],['alTargets','Missed KPI targets (below 75%)'],['alOverdue','Overdue tasks']].map(([k,l])=>`<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" name="${k}" ${s[k]?'checked':''}> ${l}</label>`).join('')}</div>
  <div class="card"><h3>🔒 Security & privacy</h3><label class="row" style="cursor:pointer;flex-wrap:nowrap;align-items:flex-start;margin-bottom:10px"><input type="checkbox" name="demoSwitch" ${s.demoSwitch!==false?'checked':''}> <span><b>Demo role switcher</b> — lets anyone signed in use "View as". Turn this off for live use so everyone sees only their own account.</span></label><div class="flag"><div class="txt">Sign-in only with emails added and approved by HR or Admin</div>${chip('On','green')}</div><div class="small"><div class="flag"><div class="txt">Role-based access: ${Object.values(ROLES).join(', ')}</div>${chip('On','green')}</div><div class="flag"><div class="txt">Audit trail for edits, approvals, KPI and settings changes</div>${chip('On','green')}</div><div class="flag"><div class="txt">Privacy notice shown before first clock-in</div>${chip('On','green')}</div><div class="flag"><div class="txt">MFA for Admin/HR, encryption at rest, backups</div>${chip('Live version','gray')}</div></div><div class="small muted mt8">Review Philippine Data Privacy Act (RA 10173) obligations with a privacy/legal professional before deployment.</div>${adm?`<div class="mt">${B('Reset demo data','resetAsk',{},'red sm')}</div>`:''}</div>
  </div><div class="row mt"><span class="sp"></span><button class="btn">Save settings</button></div></form>`}
@@ -1068,7 +1096,7 @@ function render(){
  document.documentElement.style.setProperty('--brand',D.settings.brand);
  const u=me();const nav=NAV[u.role];if(!nav.includes(S.view))S.view=nav[0];
  charts.forEach(c=>c.destroy());charts=[];kioskMin=-1;
- const badge=v=>{let n=0;if(v==='attendance'&&isMgmt())n=pendingApprovals().length;if(v==='news')n=annUnread(u).length;if(v==='eod')n=TOP.includes(u.role)?0:(eodState(u.id,todayStr)==='due'?1:0)+(isMgmt()?(D.eod||[]).filter(r=>!r.review&&r.emp!==u.id&&canManage(r.emp)&&r.date>=rel(-7)).length:0);if(v==='coaching')n=isMgmt()?D.acc.filter(a=>a.status==='Open'&&canManage(a.emp)&&a.follow&&a.follow<todayStr).length:pendingAck(u.id);return n?`<span class="cnt">${n}</span>`:''};
+ const badge=v=>{let n=0;if(v==='attendance'&&isMgmt())n=pendingApprovals().length;if(v==='news')n=annUnread(u).length;if(v==='eod')n=(STAFF.includes(u.role)&&eodState(u.id,todayStr)==='due'?1:0)+(isMgmt()&&!isExec()?(D.eod||[]).filter(r=>!r.review&&r.emp!==u.id&&canManage(r.emp)&&r.date>=rel(-7)).length:0);if(v==='coaching')n=isMgmt()?D.acc.filter(a=>a.status==='Open'&&canManage(a.emp)&&a.follow&&a.follow<todayStr).length:pendingAck(u.id);return n?`<span class="cnt">${n}</span>`:''};
  const grp=r=>D.emps.filter(e=>e.role===r&&e.status==='Active').map(e=>`<option value="${e.id}" ${e.id===u.id?'selected':''}>${esc(e.name)}</option>`).join('');
  const A=alerts();
  $('#root').innerHTML=`<aside class="side ${S.menu?'open':''}"><div class="brandbox"><div class="logo">W360</div><div><b>${esc(D.settings.company)}</b><small>WorkForce360 by Jessie Cajandab</small></div></div>
@@ -1196,7 +1224,7 @@ function verifyDone(){if(!VF)return;const g=VF.gps||{};const at=nowHM();
  log('Clock',`${px?'Team clock '+kind+' for '+emp(who).name:'Clock '+kind} ${fmt12(at)} · ${mode} · ${v.method}${v.fence?' · '+v.fence:''}`);
  closeModal();save();render();const x=day(who,todayStr);const nm=px?emp(who).name.split(' ')[0]+' ':'';
  toast(kind==='in'?`${px?nm+'clocked':'Clocked'} in at ${fmt12(at)}${x.late?` — late by ${x.lateMin} min`:' — on time ✅'}`:`${px?nm+'clocked':'Clocked'} out at ${fmt12(at)}.${px?'':' Great work today!'}`)
- if(kind==='out'&&!px&&!TOP.includes(role())&&!eodOf(who,'daily',todayStr))setTimeout(()=>toast('Clocked out. Write your EOD report now?',()=>ACT.eodNew({k:'daily'}),'Write EOD'),3000);}
+ if(kind==='out'&&!px&&STAFF.includes(role())&&!eodOf(who,'daily',todayStr))setTimeout(()=>toast('Clocked out. Write your daily report now?',()=>ACT.eodNew({k:'daily'}),'Write report'),3000);}
 function vView(d){const r=D.att[d.k];const v=r&&r[d.w];if(!v)return;const[id,date]=d.k.split('|');
  if(canManage(id))log('Access',`Viewed attendance proof of ${emp(id).name} (${date})`);
  openModal(`${esc(emp(id).name)} · ${d.w==='vin'?'Clock in':'Clock out'}`,`${v.photo?`<img class="selfie" src="${v.photo}">`:`<div class="empty">${v.purged?'Selfie deleted under the retention policy.':v.method==='qr'?'Verified by site QR code.':'No selfie stored (sample data).'}</div>`}
@@ -1287,19 +1315,31 @@ const ACT={
   <div class="fld"><label>Your signature</label><div class="sigwrap"><canvas id="sigPad"></canvas><span class="sighint" id="sigHint">Sign here with your finger</span></div><div class="row mt8"><span class="small muted">Signing confirms you received and understood this record. It does not necessarily mean you agree.</span><span class="sp"></span>${B('Clear','sigClear',{},'sm ghost')}</div></div>`,
   {submit:'Continue',fn:f=>{if(!SIGPAD||!SIGPAD.drawn){toast('Please sign in the box first');return false}SIG={id:a.id,c:f.c||'',img:SIGPAD.data()};setTimeout(()=>sigConfirm(a.id),0);return false}});sigInit()},
  sigClear:()=>{if(SIGPAD)SIGPAD.clear()},
- eodNew:d=>{const u=me();const wk=d.k==='weekly';const date=wk?wkStart(todayStr):todayStr;if(eodOf(u.id,d.k,date))return toast('Already submitted');if(!wk&&!eodExpected(u.id,todayStr))return toast("Clock in first to write today's EOD");
-  const lead=isLead(u);const tg=wk?wkTgtLines(u.id,date):tgtLines(u.id,date);const sn=lead?(wk?weekSnap(u,date):teamSnap(u,date)):null;
-  const dl=wk?(D.eod||[]).filter(r=>r.emp===u.id&&r.kind==='daily'&&wkStart(r.date)===date).sort((a,b)=>a.date.localeCompare(b.date)):[];
-  openModal(wk?`📅 Weekly report · week of ${fmtShort(date)}`:`📝 End-of-day report · ${fmtDay(todayStr)}`,`${tg.length?`<div class="note" style="margin-bottom:10px"><b>🎯 ${wk?'This week':'Today'}'s targets</b><br><span class="small">${esc(tgtTxt(tg))}</span></div>`:''}
-  ${sn?`<div class="note" style="margin-bottom:10px"><b>👥 Your team ${wk?'this week':'today'}</b><br><span class="small">${wk?`${sn.n} people · ${sn.late} lates · ${sn.absent} absences · EOD submission ${sn.eodRate??'—'}%`:`${sn.present}/${sn.n} present · ${sn.late} late · ${sn.absent} absent · ${sn.leave} on leave · ${sn.eod} EODs submitted so far`}</span></div>`:''}
-  ${wk?`<details class="small" style="margin-bottom:10px"><summary><b>Your daily EODs this week (${dl.length})</b></summary>${dl.map(r=>`<div class="mt8"><b>${fmtDay(r.date)}</b> — ${esc(r.done)}</div>`).join('')||'<div class="muted mt8">None yet.</div>'}</details>`:''}
-  ${fld(wk?'Highlights of the week':'What I did today',`<textarea name="done" required placeholder="${wk?'Wins, results, finished work':'Main tasks, customers served, results'}"></textarea>`)}
-  ${fld(wk?'Issues this week (optional)':'Problems / blockers (optional)',`<textarea name="blockers" placeholder="${wk?'What got in the way, what needs help':'Anything that slowed you down or needs your supervisor'}"></textarea>`)}
-  ${fld(wk?'Plan for next week':'Plan for tomorrow',`<textarea name="plan" required></textarea>`)}
-  ${lead?fld('Team issues / people to follow up (optional)',`<textarea name="team" placeholder="Who needs coaching, support or recognition"></textarea>`):''}`,
-  {submit:'Submit report',fn:f=>{D.eod=D.eod||[];D.eod.push({id:uid(),emp:u.id,kind:d.k,date,done:f.done.trim(),blockers:(f.blockers||'').trim(),plan:f.plan.trim(),team:(f.team||'').trim(),tg,snap:sn,at:new Date().toISOString()});log('EOD',`Submitted ${wk?'weekly report (week of '+date+')':'daily EOD ('+date+')'}`);toast(wk?'Weekly report submitted ✅':'EOD submitted — see you tomorrow! ✅')}})},
+ eodNew:d=>{const u=me();const wk=d.k==='weekly';const date=wk?(d.w||wkStart(todayStr)):todayStr;if(eodOf(u.id,d.k,date))return toast('Already submitted');
+  if(wk&&!isLead(u))return toast('Weekly reports are for supervisors, OICs and managers');if(!wk&&!eodExpected(u.id,todayStr))return toast("Clock in first to write today's report");
+  const C=eodCfg()[d.k];EODF={cols:C.cols};const fieldsH=C.fields.map(f=>fld(esc(f.label)+(f.opt?' <span class="muted">(optional)</span>':''),f.type==='number'?`<input class="inp" type="number" step="any" name="F_${f.k}">`:`<textarea name="F_${f.k}"></textarea>`)).join('');
+  if(!wk){openModal(`📝 Daily report · ${fmtDay(todayStr)}`,`<div class="small muted" style="margin-bottom:8px">One line per sale or order. Totals are added up at the bottom.</div><div id="reT">${eodLineH(C.cols,0)}</div><button type="button" class="btn sm ghost mt8" data-act="eodLine">+ Add line</button>
+   <div class="note mt" style="font-size:14px"><b>Total</b> · <span id="eodTot"></span></div>${fieldsH}`,{submit:'Submit report',wide:true,fn:f=>{const rows=[];for(const el of document.querySelectorAll('#reT [data-i]')){const i=el.dataset.i,r={};C.cols.forEach(c=>{const v=(f['L'+i+'_'+c.k]??'').trim();r[c.k]=isNum(c)&&v!==''?+v:v});if(!C.cols.some(c=>r[c.k]!==''))continue;const miss=C.cols.find(c=>!c.opt&&r[c.k]==='');if(miss){toast(`Fill in ${miss.label} on line ${rows.length+1}`);return false}rows.push(r)}
+    if(!rows.length){toast('Add at least one line');return false}const fields={};C.fields.forEach(x=>fields[x.k]=(f['F_'+x.k]||'').trim());const miss2=C.fields.find(x=>!x.opt&&!fields[x.k]);if(miss2){toast('Fill in '+miss2.label);return false}
+    D.eod=D.eod||[];D.eod.push({id:uid(),emp:u.id,kind:'daily',date,cols:C.cols.map(c=>({...c})),rows,totals:sumCols(C.cols,rows),fcfg:C.fields.map(x=>({...x})),fields,at:new Date().toISOString()});log('EOD',`Submitted daily report (${date}, ${rows.length} lines)`);EODF=null;toast('Report submitted — see you tomorrow! ✅')}});
+   RE={n:0,rowH:(r,i)=>eodLineH(C.cols,i)};$('#mform').addEventListener('input',eodCalc);eodCalc();return}
+  const T=teamStaff(u);const DC=eodCfg().daily.cols;const days=[0,1,2,3,4,5,6].map(i=>ds(addDays(parseD(date),i)));
+  const pre=days.map(dd=>{const R=T.map(e=>eodOf(e.id,'daily',dd)).filter(Boolean);const o={d:dd,eods:R.length};C.cols.forEach(c=>{const dc=DC.find(x=>x.k===c.k&&isNum(x));o[c.k]=dc&&R.length?R.reduce((a,r)=>a+(+(r.totals||{})[c.k]||0),0):''});return o});
+  openModal(`📅 Team weekly report · week of ${fmtShort(date)}`,`<div class="small muted" style="margin-bottom:8px">Filled in from ${T.length} team member${T.length===1?'':'s'}' daily reports. Check and correct the numbers if needed.</div>
+   <div class="tbl"><table><tr><th>Day</th>${C.cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr>${pre.map((o,i)=>`<tr><td class="nw small"><b>${fmtDay(o.d)}</b><br><span class="muted">${o.eods} EOD${o.eods===1?'':'s'}</span></td>${C.cols.map(c=>`<td><input class="inp" style="width:110px" name="W${i}_${c.k}" ${isNum(c)?'type="number" step="any" min="0" inputmode="decimal"':''} value="${o[c.k]===''?'':esc(isNum(c)?Math.round(o[c.k]*100)/100:o[c.k])}"></td>`).join('')}</tr>`).join('')}</table></div>
+   <div class="note mt" style="font-size:14px"><b>Week total</b> · <span id="eodTot"></span></div>${fieldsH}`,{submit:'Submit weekly report',wide:true,fn:f=>{const rows=pre.map((o,i)=>{const r={d:o.d,eods:o.eods};C.cols.forEach(c=>{const v=(f['W'+i+'_'+c.k]??'').trim();r[c.k]=isNum(c)&&v!==''?+v:v});return r});
+    const fields={};C.fields.forEach(x=>fields[x.k]=(f['F_'+x.k]||'').trim());const miss2=C.fields.find(x=>!x.opt&&!fields[x.k]);if(miss2){toast('Fill in '+miss2.label);return false}
+    D.eod=D.eod||[];D.eod.push({id:uid(),emp:u.id,kind:'weekly',date,cols:C.cols.map(c=>({...c})),days:rows,totals:sumCols(C.cols,rows),fcfg:C.fields.map(x=>({...x})),fields,at:new Date().toISOString()});log('EOD',`Submitted team weekly report (week of ${date})`);EODF=null;toast('Weekly report submitted ✅')}});
+  $('#mform').addEventListener('input',eodCalc);eodCalc()},
+ eodLine:()=>ACT.rowAdd(),
  eodReview:d=>{const r=D.eod.find(x=>x.id===d.id);openModal('Review report',`${eodView(r)}${fld('Comment for '+esc(emp(r.emp).name.split(' ')[0])+' (optional)',`<textarea name="c" placeholder="Feedback, help offered, or a thank-you"></textarea>`)}`,{submit:'✓ Mark reviewed',wide:true,fn:f=>{r.review={by:S.user,at:new Date().toISOString(),comment:(f.c||'').trim()};log('EOD',`Reviewed ${r.kind} report of ${emp(r.emp).name} (${r.date})`);toast('Marked reviewed')}})},
- eodReviewAll:d=>{const L=D.eod.filter(r=>r.kind==='daily'&&r.date===d.d&&!r.review&&canManage(r.emp)&&r.emp!==S.user);L.forEach(r=>r.review={by:S.user,at:new Date().toISOString(),comment:''});log('EOD',`Reviewed ${L.length} daily EODs for ${d.d}`);save();render();toast(`${L.length} report${L.length===1?'':'s'} marked reviewed`)},
+ eodReviewAll:d=>{const L=D.eod.filter(r=>r.kind==='daily'&&r.date===d.d&&!r.review&&canManage(r.emp)&&r.emp!==S.user);L.forEach(r=>r.review={by:S.user,at:new Date().toISOString(),comment:''});log('EOD',`Reviewed ${L.length} daily reports for ${d.d}`);save();render();toast(`${L.length} report${L.length===1?'':'s'} marked reviewed`)},
+ eodCfgEdit:d=>{if(!isHRA())return;const C=eodCfg()[d.w],part=d.p;const isCols=part==='cols';
+  rowEditor(`${d.w==='daily'?'Daily employee report':'Weekly team report'} — ${isCols?'columns':'extra questions'}`,[{k:'label',label:isCols?'Column name':'Question'},{k:'type',label:'Type',type:'select',opts:isCols?[['text','Text'],['number','Number (totaled)'],['money','Amount ₱ (totaled)']]:[['text','Text'],['number','Number']]},{k:'opt',label:'Required?',type:'select',opts:[['','Required'],['1','Optional']]}],C[part],rows=>{
+   if(isCols&&!rows.length){toast('Keep at least one column');return false}const used=new Set();
+   C[part]=rows.map(r=>{const old=C[part].find(x=>x.label.toLowerCase()===String(r.label).trim().toLowerCase());let k=old?old.k:String(r.label).toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,16)||'f';while(used.has(k))k+='x';used.add(k);return{k,label:String(r.label).trim(),type:r.type,opt:r.opt}});
+   log('Settings',`Updated ${d.w} report ${isCols?'columns':'questions'}: ${C[part].map(x=>x.label).join(', ')}`);toast('Report form saved')},
+   `<div class="small muted" style="margin-bottom:8px">${isCols?(d.w==='daily'?'Each line of the employee\'s daily report has these columns. Number and amount columns are totaled at the bottom.':'One row per day of the week. A column with the same name as a daily column is filled in automatically from the team\'s daily reports.'):'Extra questions shown below the table.'}</div>`)},
  coachPdf:d=>{if(!isHRA())return;toast('Preparing PDF…');coachPDF(d.id)},
  dlOpen:d=>dlOpen(d.id),
  strictEdit:()=>{const L=active().filter(e=>!TOP.includes(e.role)).sort((a,b)=>a.dept.localeCompare(b.dept)||a.name.localeCompare(b.name));
@@ -1339,11 +1379,11 @@ const ACT={
  empForm:d=>{const e=d.e?emp(d.e):{name:'',position:'',dept:Object.keys(D.kpiT)[0],role:'employee',mgr:'',email:'',phone:'',hired:todayStr,status:'Active',shift:D.settings.shifts[0].id,restDay:0,empType:'Probationary',site:sites()[0].id,anySite:false,strict:!!D.settings.strict};
   openModal(d.e?'Edit employee':'Add employee',`<div class="f2">${fld('Full name',`<input name="name" required value="${esc(e.name)}">`)}${fld('Position',`<input name="position" required value="${esc(e.position)}">`)}</div>
   <div class="f3">${fld('Department',`<select name="dept">${opts(Object.keys(D.kpiT),e.dept)}</select>`)}${fld('System role',`<select name="role">${kvOpts(ROLES,e.role)}</select>`)}${fld('Reports to',`<select name="mgr"><option value="">—</option>${empOpts(D.emps.filter(x=>x.id!==d.e&&x.role!=='employee'),e.mgr)}</select>`)}</div>
-  <div class="f3">${fld('Shift',`<select name="shift">${D.settings.shifts.map(s=>`<option value="${s.id}" ${s.id===e.shift?'selected':''}>${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}</select>`)}${fld('Rest day',`<select name="restDay">${DOW.map((n,i)=>`<option value="${i}" ${i==e.restDay?'selected':''}>${n}</option>`).join('')}</select>`)}${fld('Employment type',`<select name="empType">${opts(['Regular','Probationary','Contractual','Project-based','Part-time'],e.empType)}</select>`)}</div>
+  <div class="f3">${fld('Shift',`<select name="shift">${D.settings.shifts.map(s=>`<option value="${s.id}" ${s.id===e.shift?'selected':''}>${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}</select>`)}${fld('Rest day 1',`<select name="restDay">${DOW.map((n,i)=>`<option value="${i}" ${i==e.restDay?'selected':''}>${n}</option>`).join('')}</select>`)}${fld('Rest day 2 (optional)',`<select name="restDay2"><option value="-1">None — 1 rest day</option>${DOW.map((n,i)=>`<option value="${i}" ${e.restDay2!=null&&e.restDay2!==''&&i==e.restDay2?'selected':''}>${n}</option>`).join('')}</select>`)}${fld('Employment type',`<select name="empType">${opts(['Regular','Probationary','Contractual','Project-based','Part-time'],e.empType)}</select>`)}</div>
   <div class="f2">${fld('Home branch',`<select name="site">${sites().map(x=>`<option value="${x.id}" ${x.id===e.site?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`)}<label class="row" style="cursor:pointer;margin-top:22px;flex-wrap:nowrap"><input type="checkbox" name="anySite" ${e.anySite?'checked':''}> <span class="small">Can clock in at <b>any branch</b> (roving)</span></label><label class="row" style="cursor:pointer;margin-top:22px;flex-wrap:nowrap"><input type="checkbox" name="strict" ${strictFor(e)?'checked':''}> <span class="small"><b>Strict mode</b> — must be inside the branch to clock in</span></label></div>
   <div class="f3">${fld('Date hired',`<input type="date" name="hired" value="${e.hired}">`)}${fld('Status',`<select name="status">${opts(['Active','On leave','Resigned','Terminated','Inactive'],e.status)}</select>`)}</div>
   <div class="f3">${fld('Work email (used to sign in)',`<input type="email" name="email" value="${esc(e.email)}">`)}${fld('App access',`<select name="access">${[['approved','✓ Approved — can sign in'],['pending','Waiting for approval'],['revoked','Removed — cannot sign in']].map(([k,l])=>`<option value="${k}" ${(e.access||'approved')===k?'selected':''}>${l}</option>`).join('')}</select>`)}${fld('Mobile',`<input name="phone" value="${esc(e.phone)}">`)}</div>`,
-  {wide:true,fn:f=>{f.email=(f.email||'').trim().toLowerCase();if(f.email&&D.emps.some(x=>x.id!==d.e&&(x.email||'').toLowerCase()===f.email)){toast('Another employee already uses this email');return false}if(d.e===AUTH&&f.access!=='approved'){toast("You can't remove your own access");return false}if(!f.email)f.access='none';else if(!d.e||emp(d.e).access!==f.access||emp(d.e).email!==f.email)log('Access',`App access for ${f.name}: ${f.access} (${f.email})`);f.restDay=+f.restDay;f.mgr=f.mgr||null;f.anySite=f.anySite==='on';f.strict=f.strict==='on';f.location=siteBy(f.site).name;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
+  {wide:true,fn:f=>{f.email=(f.email||'').trim().toLowerCase();if(f.email&&D.emps.some(x=>x.id!==d.e&&(x.email||'').toLowerCase()===f.email)){toast('Another employee already uses this email');return false}if(d.e===AUTH&&f.access!=='approved'){toast("You can't remove your own access");return false}if(!f.email)f.access='none';else if(!d.e||emp(d.e).access!==f.access||emp(d.e).email!==f.email)log('Access',`App access for ${f.name}: ${f.access} (${f.email})`);f.restDay=+f.restDay;f.restDay2=+f.restDay2;if(f.restDay2===f.restDay)f.restDay2=-1;f.mgr=f.mgr||null;f.anySite=f.anySite==='on';f.strict=f.strict==='on';f.location=siteBy(f.site).name;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
  csv:d=>{const rows=repRows(d.k);log('Report',`Downloaded ${d.k} report (${S.repDays} days)`);download(`workforce360-${d.k}-${todayStr}.csv`,toCSV(rows))},
  csvCopy:d=>{const t=toCSV(repRows(d.k));navigator.clipboard.writeText(t).then(()=>toast('Copied! Paste into Excel or Google Sheets.'),()=>copyBox(t))},
  swatch:d=>{document.querySelector('[name=brand]').value=d.c;document.documentElement.style.setProperty('--brand',d.c)},
@@ -1387,7 +1427,7 @@ document.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='logi
   Object.assign(s,f,{strict:f.strict==='on',alMissed:f.alMissed==='on',alApprovals:f.alApprovals==='on',alTargets:f.alTargets==='on',alOverdue:f.alOverdue==='on',demoSwitch:f.demoSwitch==='on'});['lat','lng','radius','grace','otMin','wAtt','wKpi','wTask','vl','sl','retention'].forEach(k=>{if(f[k]!==undefined)s[k]=+f[k]});
   log('Settings','Updated settings');save();render();toast('Settings saved')}});
 if(!D.tgtSeeded)seedTargets();
-if(!D.eod){migrateEod();save()}
+if(D.eodV!==2){migrateEod();save()}
 render();
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.W360Android&&!/claude|artifact/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
