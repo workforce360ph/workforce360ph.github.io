@@ -150,6 +150,19 @@ tr:last-child td{border-bottom:0}
 .flag{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .flag:last-child{border-bottom:0}
 .flag .txt{flex:1;min-width:0}
+.sigwrap{position:relative;border:2px dashed #cbd5e1;border-radius:12px;height:170px;background:#f8fafc;overflow:hidden}
+#sigPad{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.sighint{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:#94a3b8;font-size:13px;pointer-events:none;border-top:1px solid #cbd5e1;margin:0 30px;padding-top:6px}
+.sigimg{max-width:240px;width:100%;border:1px solid var(--line,#e2e8f0);border-radius:8px;background:#fff;display:block;margin-bottom:4px}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,var(--brand) 0%,#0f172a 100%)}
+.login .lbox{background:#fff;border-radius:20px;max-width:420px;width:100%;padding:28px 24px;box-shadow:0 30px 80px #0006}
+.login .lbox h2{margin:14px 0 4px;font-size:22px}
+.login .inp{width:100%;font-size:16px;padding:12px}
+.login .btn{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:12px}
+.login .demoacc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.login .demoacc button{border:1px solid #e2e8f0;background:#f8fafc;border-radius:999px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.ansel{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.scope{display:inline-flex;background:#f1f5f9;border-radius:10px;padding:3px;gap:3px}.scope button{border:0;background:transparent;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;color:var(--muted)}.scope button.on{background:#fff;color:var(--brand);box-shadow:0 1px 3px #0002}
 .demo{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:16px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .seg button{border:2px solid var(--line);background:#fff;border-radius:12px;padding:12px 8px;cursor:pointer;font-weight:600}
@@ -235,7 +248,8 @@ const peso=n=>'₱'+Math.round(n).toLocaleString('en-PH');
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 /* ===================== constants ===================== */
-const ROLES={employee:'Employee',driver:'Driver',accountmgr:'Account Manager',oic:'OIC (Officer-in-Charge)',supervisor:'Supervisor',manager:'Manager',hr:'HR',admin:'Admin',executive:'Executive'};
+const ROLES={employee:'Employee',driver:'Driver',accountmgr:'Account Manager',oic:'OIC (Officer-in-Charge)',supervisor:'Supervisor',manager:'Manager',hr:'HR',admin:'Admin',executive:'Executive',owner:'Owner'};
+const TOP=['executive','owner'];
 const STAFF=['employee','driver','accountmgr'];
 const PROXY_ROLES=['oic','supervisor','manager'];
 const OIC_SCOPE=['employee','driver','accountmgr','supervisor'];
@@ -286,7 +300,8 @@ function seed(){
   ['e17','Lea Mercado','OIC – Mandaue Branch','Sales','oic','e2',.95,0.97,'reg',0,'Regular'],
   ['e18','Paul Gomez','Account Manager','Sales','accountmgr','e2',.93,1.01,'reg',0,'Regular'],
   ['e15','Nina Flores','HR Officer','Admin','hr','e1',.98,0.92,'reg',0,'Regular'],
-  ['e16','Roberto Lim','General Manager','Admin','executive',null,.97,0.95,'reg',0,'Regular']];
+  ['e16','Roberto Lim','General Manager','Admin','executive','e19',.97,0.95,'reg',0,'Regular'],
+  ['e19','Ramon Villanueva','Owner','Admin','owner',null,.97,0.95,'reg',0,'Regular']];
  const emps=E.map(([id,name,position,dept,role,mgr,rl,pf,shift,restDay,empType],i)=>({id,name,position,dept,role,mgr,rl,pf,shift,restDay,empType,location:'Main Office',
   email:name.toLowerCase().replace(/[^a-z ]/g,'').split(' ')[0]+'@company.ph',
   phone:'0917 '+String(1000000+Math.floor(R()*8999999)).replace(/(\d{3})(\d{4})/,'$1 $2'),
@@ -336,7 +351,7 @@ function seed(){
   Operations:['Cycle count – Aisle 3','Dispatch pending deliveries','Update stock records','Resolve open customer tickets','Truck maintenance check','Reorder fast-moving items','Organize receiving area'],
   Admin:['Prepare payroll summary','Update 201 files','Renew business permits','Draft attendance & privacy policy']};
  const tasks=[];
- for(const e of emps){if(e.role==='executive')continue;
+ for(const e of emps){if(TOP.includes(e.role))continue;
   const pool=TT[e.dept];const n=STAFF.includes(e.role)?4:2;
   for(let j=0;j<n;j++){
    const due=Math.floor(R()*20)-11;let status;
@@ -347,7 +362,7 @@ function seed(){
  const qEnd=ds(new Date(Y,Math.floor(TODAY.getMonth()/3)*3+3,0)),qStart=ds(new Date(Y,Math.floor(TODAY.getMonth()/3)*3,1));
  const GT={Sales:['Hit ₱750K quarterly sales','Complete appliance product certification','Achieve 30% attach rate on warranties'],Operations:['Reduce picking errors below 1%','Zero late deliveries this quarter','Finish forklift safety training'],Admin:['Digitize all 201 files','Roll out attendance & privacy policy']};
  const goals=[];
- for(const e of emps){if(e.role==='executive')continue;const g=GT[e.dept];for(let j=0;j<(STAFF.includes(e.role)?2:1);j++)goals.push({id:uid(),emp:e.id,title:g[(j+e.id.length)%g.length],start:qStart,due:qEnd,progress:Math.min(100,r0(e.pf*55*(.7+R()*.6))),note:''})}
+ for(const e of emps){if(TOP.includes(e.role))continue;const g=GT[e.dept];for(let j=0;j<(STAFF.includes(e.role)?2:1);j++)goals.push({id:uid(),emp:e.id,title:g[(j+e.id.length)%g.length],start:qStart,due:qEnd,progress:Math.min(100,r0(e.pf*55*(.7+R()*.6))),note:''})}
  const reviews=[
   {id:uid(),emp:'e4',by:'e13',date:rel(-35),period:'Q3 Review',rating:5,strengths:'Consistently tops sales; great with installment customers.',improve:'Share techniques with newer associates.'},
   {id:uid(),emp:'e5',by:'e13',date:rel(-35),period:'Q3 Review',rating:3,strengths:'Good product knowledge.',improve:'Punctuality and follow-up discipline.'},
@@ -390,7 +405,7 @@ if(!D||D.v!==3)D=seed();
 const S={tgtP:'day',tgtD:todayStr,user:'e1',view:'',tabs:{},menu:false,bell:false,attDate:todayStr,taskEmp:'all',repDays:30,accFilter:'open'};
 try{const u=localStorage.getItem(KEY+'-user');if(u&&D.emps.find(e=>e.id===u))S.user=u}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(D));localStorage.setItem(KEY+'-user',S.user)}catch(e){toast('Browser storage is full — older selfies may not be saved')}}
-function log(action,detail){D.audit.unshift({at:new Date().toISOString(),user:S.user,action,detail});if(D.audit.length>600)D.audit.length=600}
+function log(action,detail,who){D.audit.unshift({at:new Date().toISOString(),user:who||S.user,action,detail});if(D.audit.length>600)D.audit.length=600}
 /* KPI categories */
 const KCATS=['Productivity','Quality','Target achievement','Attendance','Compliance','Customer','Other'];
 function guessCat(n){n=n.toLowerCase();return/compli/.test(n)?'Compliance':/quality|accura|satisf/.test(n)?'Quality':/on-time|on time|processing|achievement/.test(n)?'Target achievement':/attend/.test(n)?'Attendance':/customer/.test(n)?'Customer':'Productivity'}
@@ -401,7 +416,9 @@ function migrateRoles(){if(D.rolesV===2)return;const e12=D.emps.find(e=>e.id==='
  [['e17','Lea Mercado','OIC – Mandaue Branch','Sales','oic','e2','mandaue',false],['e18','Paul Gomez','Account Manager','Sales','accountmgr','e2','main',false]].forEach(([id,name,position,dept,role,mgr,site,anySite],i)=>{if(D.emps.find(e=>e.id===id))return;
   D.emps.push({id,name,position,dept,role,mgr,pf:.97,rl:.95,shift:'reg',restDay:0,empType:'Regular',email:name.toLowerCase().split(' ')[0]+'@company.ph',phone:'0917 555 01'+(10+i),hired:todayStr,status:'Active',color:AVC[(16+i)%AVC.length],site,anySite});
   D.kpis[id]=(D.kpiT[dept]||[]).map(t=>({...t,actual:Math.round(+t.target*.9)}));D.kpiHist[id]=[]});D.rolesV=2}
-migrateRoles();
+function migrateOwner(){if(D.emps.find(e=>e.id==='e19'))return;D.emps.push({id:'e19',name:'Ramon Villanueva',position:'Owner',dept:'Admin',role:'owner',mgr:null,pf:.97,rl:.95,shift:'reg',restDay:0,empType:'Regular',email:'ramon@company.ph',phone:'0917 555 0119',hired:rel(-2000),status:'Active',color:AVC[3],site:'main',anySite:true});D.kpis.e19=[];D.kpiHist.e19=[];const g=D.emps.find(e=>e.id==='e16');if(g&&!g.mgr)g.mgr='e19'}
+function migrateAccess(){if(!D.accessReq)D.accessReq=[];D.emps.forEach(e=>{if(!e.access)e.access=e.email?'approved':'none'})}
+migrateRoles();migrateOwner();migrateAccess();
 migrateSites();
 function migrateKpi(){const fix=k=>{if(!k.cat)k.cat=guessCat(k.name);if(k.desc==null)k.desc=KDESC[k.name]||''};Object.values(D.kpiT).forEach(L=>L.forEach(fix));Object.values(D.kpis).forEach(L=>L.forEach(fix))}
 migrateKpi();
@@ -433,16 +450,17 @@ const me=()=>emp(S.user);
 const role=()=>me().role;
 const isMgmt=()=>!STAFF.includes(role());
 const isExec=()=>role()==='executive';
-const isHRA=()=>['admin','hr'].includes(role());
+const isHRA=()=>['admin','hr','owner'].includes(role());
+const isAdm=()=>['admin','owner'].includes(role());
 const active=()=>D.emps.filter(e=>e.status==='Active');
 function team(){const u=me();
- if(['admin','hr','executive'].includes(u.role))return active().filter(e=>e.id!==u.id||u.role!=='executive');
+ if(['admin','hr','executive','owner'].includes(u.role))return active().filter(e=>e.id!==u.id||!TOP.includes(u.role));
  if(u.role==='manager')return active().filter(e=>e.dept===u.dept&&e.id!==u.id);
  if(u.role==='supervisor')return active().filter(e=>e.mgr===u.id);
  if(u.role==='oic')return active().filter(e=>e.site===u.site&&e.id!==u.id&&OIC_SCOPE.includes(e.role));
  return[u]}
 function canManage(id){const u=me();if(!id||id===u.id)return false;const e=emp(id);
- if(u.role==='admin'||u.role==='hr')return true;if(u.role==='manager')return e.dept===u.dept;if(u.role==='supervisor')return e.mgr===u.id;if(u.role==='oic')return e.site===u.site&&OIC_SCOPE.includes(e.role);return false}
+ if(u.role==='admin'||u.role==='hr'||u.role==='owner')return true;if(u.role==='manager')return e.dept===u.dept;if(u.role==='supervisor')return e.mgr===u.id;if(u.role==='oic')return e.site===u.site&&OIC_SCOPE.includes(e.role);return false}
 const canProxy=id=>PROXY_ROLES.includes(role())&&canManage(id);
 const shiftOf=e=>D.settings.shifts.find(s=>s.id===e.shift)||D.settings.shifts[0];
 const holidayOn=d=>D.holidays.find(h=>h.date===d);
@@ -502,6 +520,7 @@ const points=id=>sum(D.awards.filter(a=>a.emp===id).map(a=>+a.points||0));
 const lastKpi=id=>{const h=D.kpiHist[id]||[];return h.length?h[h.length-1]:null};
 function alerts(){
  const u=me(),s=D.settings,A=[];const T=team();const tIds=new Set(T.map(e=>e.id));
+ if(isHRA()){const ar=(D.accessReq||[]).filter(x=>x.status==='Pending').length;if(ar)A.push({i:'🔐',t:`${ar} app access request${ar>1?'s':''} waiting for approval`,v:'employees',tab:'access',sev:'amber'})}
  if(isMgmt()&&!isExec()){
   const pa=pendingApprovals();if(s.alApprovals&&pa.length)A.push({i:'📝',t:`${pa.length} request${pa.length>1?'s':''} waiting for your approval`,v:'attendance',tab:'requests',sev:'amber'});
   if(s.alMissed){const n=nowMin();const miss=T.filter(e=>day(e.id,todayStr).status==='Not In'&&n>toMin(shiftOf(e).start)+(+s.grace)+15);if(miss.length)A.push({i:'⏰',t:`${miss.length} team member${miss.length>1?'s have':' has'}n't clocked in yet`,v:'attendance',tab:'daily',sev:'red'});
@@ -551,12 +570,13 @@ const DCOL=['#0f766e','#2563eb','#d97706','#db2777','#7c3aed','#65a30d'];
 
 /* ===================== navigation ===================== */
 const NAVS={
- dashboard:['📊','Dashboard'],exec:['🏛️','Executive Summary'],employees:['👥','Employees'],attendance:['🕘','Attendance'],performance:['📈','Performance'],goals:['🎯','Tasks & Goals'],coaching:['🛡️','Coaching'],recognition:['🏆','Recognition'],reports:['📑','Reports'],audit:['🧾','Audit Trail'],settings:['⚙️','Settings']};
+ dashboard:['📊','Dashboard'],analytics:['🧮','Team Analytics'],exec:['🏛️','Executive Summary'],employees:['👥','Employees'],attendance:['🕘','Attendance'],performance:['📈','Performance'],goals:['🎯','Tasks & Goals'],coaching:['🛡️','Coaching'],recognition:['🏆','Recognition'],reports:['📑','Reports'],audit:['🧾','Audit Trail'],settings:['⚙️','Settings']};
 const NAV={
- admin:['dashboard','exec','employees','attendance','performance','goals','coaching','recognition','reports','audit','settings'],
+ admin:['dashboard','analytics','exec','employees','attendance','performance','goals','coaching','recognition','reports','audit','settings'],
  hr:['dashboard','employees','attendance','performance','coaching','recognition','reports','audit','settings'],
- executive:['exec','dashboard','performance','recognition','reports'],
- manager:['dashboard','employees','attendance','performance','goals','coaching','recognition','reports'],
+ executive:['exec','analytics','dashboard','performance','recognition','reports'],
+ owner:['analytics','exec','dashboard','employees','attendance','performance','goals','coaching','recognition','reports','audit','settings'],
+ manager:['dashboard','analytics','employees','attendance','performance','goals','coaching','recognition','reports'],
  supervisor:['dashboard','employees','attendance','performance','goals','coaching','recognition','reports'],
  oic:['dashboard','employees','attendance','performance','goals','coaching','recognition','reports'],
  employee:['dashboard','attendance','performance','goals','coaching','recognition'],
@@ -564,7 +584,7 @@ const NAV={
  accountmgr:['dashboard','attendance','performance','goals','coaching','recognition']};
 const navLabel=v=>{const r=role();if(STAFF.includes(r))return{dashboard:'My Home',attendance:'My Attendance',performance:'My Performance',goals:'My Tasks & Goals',coaching:'My Coaching',recognition:'Recognition'}[v]||NAVS[v][1];
  if(v==='employees')return r==='manager'?'My Department':r==='supervisor'?'My Team':r==='oic'?'My Branch':'Employees';return NAVS[v][1]};
-const TITLES={dashboard:'Dashboard',exec:'Executive Summary',employees:'Employees',attendance:'Attendance & Scheduling',performance:'Performance & KPIs',goals:'Tasks & Productivity',coaching:'Coaching & Development',recognition:'Recognition',reports:'Reports',audit:'Audit Trail',settings:'Settings'};
+const TITLES={dashboard:'Dashboard',analytics:'Team Analytics',exec:'Executive Summary',employees:'Employees',attendance:'Attendance & Scheduling',performance:'Performance & KPIs',goals:'Tasks & Productivity',coaching:'Coaching & Development',recognition:'Recognition',reports:'Reports',audit:'Audit Trail',settings:'Settings'};
 
 /* ===================== clock widget ===================== */
 function clockState(){const u=me(),t=day(u.id,todayStr),sh=shiftOf(u);let btns='',line='';
@@ -574,7 +594,7 @@ function clockState(){const u=me(),t=day(u.id,todayStr),sh=shiftOf(u);let btns='
   line=`In at ${fmt12(t.in)} (${t.mode})${t.late?` · late by ${t.lateMin} min`:' · on time ✅'}${t.brk?` · break ${t.brk} min`:''}`}
  else line=`Done: ${fmt12(t.in)} – ${fmt12(t.out)} · ${t.worked.toFixed(1)} hrs worked${t.ot?` · ${hm(t.ot)} OT`:''}${t.ut?` · ${hm(t.ut)} undertime`:''}`;
  return{t,btns,line}}
-function clockBar(){if(isExec())return'';const{btns,line}=clockState();return`<div class="card clockcard clockbar"><div><b>My attendance today</b> · <span class="liveclock"></span><div class="small" style="opacity:.9">${line}</div></div><span class="sp" style="flex:1"></span><div class="row">${btns}${PROXY_ROLES.includes(role())&&team().length?B('👥 Team clock-in','teamClock',{},'ghost'):''}</div></div>`}
+function clockBar(){if(TOP.includes(role()))return'';const{btns,line}=clockState();return`<div class="card clockcard clockbar"><div><b>My attendance today</b> · <span class="liveclock"></span><div class="small" style="opacity:.9">${line}</div></div><span class="sp" style="flex:1"></span><div class="row">${btns}${PROXY_ROLES.includes(role())&&team().length?B('👥 Team clock-in','teamClock',{},'ghost'):''}</div></div>`}
 
 /* ===================== pages: dashboard ===================== */
 function pgDashboard(){return isMgmt()?dashMgmt():dashEmp()}
@@ -586,7 +606,7 @@ function dashMgmt(){
  const P=T.map(e=>({e,p:prod(e.id)})).sort((a,b)=>b.p-a.p);const ap=avg(P.map(x=>x.p));
  const fl=T.filter(e=>!isExec()).flatMap(e=>flags(e.id).map(f=>({...f,id:e.id})));
  const pa=pendingApprovals();const ac=D.accomp.filter(a=>T.some(e=>e.id===a.emp)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
- return`<div class="demo">👋 Demo with sample data. Use <b>View as</b> (top right) to switch between Employee, Supervisor, Manager, HR, Admin and Executive. Changes are saved in this browser only.</div>
+ return`<div class="demo">👋 Demo with sample data. Use <b>Demo: view as</b> (top right) to switch roles, or sign out and sign in with another demo account. Changes are saved in this browser only.</div>
  ${clockBar()}
  <div class="grid g6 mt">
   ${stat('Headcount',T.length,role()==='supervisor'?'Direct reports':role()==='oic'?esc(homeSite(me()).name):role()==='manager'?esc(me().dept)+' department':'Company-wide','👥')}
@@ -660,13 +680,33 @@ function dashEmpAfter(){mk('cMe',{type:'line',data:{labels:monthLabels(),dataset
 const dueTxt=x=>{const od=x.status!=='done'&&x.due<todayStr;return od?`<span style="color:var(--red);font-weight:600">Overdue · ${fmtShort(x.due)}</span>`:x.due===todayStr?'Due today':'Due '+fmtShort(x.due)};
 function goalBlock(g){const[s,c]=goalStatus(g);return`<div class="goal"><div class="row"><b style="flex:1">${esc(g.title)}</b>${chip(s,c)}</div>${barH(g.progress,BC[c==='green'?'green':c])}<div class="row small muted"><span>${g.progress}% · due ${fmtShort(g.due)}${g.emp===S.user?'':' · '+esc(emp(g.emp).name)}</span><span class="sp"></span>${(g.emp===S.user||canManage(g.emp))?B('Update','goalUpd',{id:g.id},'sm ghost'):''}</div>${g.note?`<div class="small muted">📝 ${esc(g.note)}</div>`:''}</div>`}
 
+/* ===================== team analytics ===================== */
+function downline(id){const out=[],q=[id];while(q.length){const m=q.shift();D.emps.filter(e=>e.mgr===m&&e.status==='Active').forEach(e=>{if(!out.includes(e)){out.push(e);q.push(e.id)}})}return out}
+const canAll=()=>['owner','executive','admin','hr'].includes(role());
+function anList(){const sc=canAll()?(S.anScope||'all'):'team';let T=(sc==='all'?active():downline(S.user)).filter(e=>!TOP.includes(e.role)&&e.id!==S.user);
+ if(S.anDept&&S.anDept!=='all')T=T.filter(e=>e.dept===S.anDept);if(S.anSite&&S.anSite!=='all')T=T.filter(e=>e.site===S.anSite);return T}
+function pgAnalytics(){const n=S.repDays,T=anList(),sc=canAll()?(S.anScope||'all'):'team';const base=(sc==='all'?active():downline(S.user)).filter(e=>!TOP.includes(e.role));
+ const a=T.map(e=>attSum(e.id,n)),P=T.map(e=>({e,a:attSum(e.id,n),k:kpiScore(e.id),t:taskStats(e.id).rate,p:prod(e.id,n)})).sort((x,y)=>y.p-x.p);
+ const deps=[...new Set(base.map(e=>e.dept))],st=[...new Set(base.map(e=>e.site))];
+ const sel=(k,o,v)=>`<select class="inp" data-chg="anF" data-k="${k}">${o.map(([x,l])=>`<option value="${x}" ${x===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+ return`<div class="card"><div class="ansel">${canAll()?`<div class="scope">${[['team','👤 My team'],['all','🏢 Overall company']].map(([k,l])=>`<button type="button" class="${sc===k?'on':''}" data-act="anScope" data-k="${k}">${l}</button>`).join('')}</div>`:`<b>👤 My team</b>`}
+  ${sel('anDept',[['all','All departments'],...deps.map(d=>[d,d])],S.anDept||'all')}${sel('anSite',[['all','All branches'],...st.map(x=>[x,shortSite(siteBy(x).name)])],S.anSite||'all')}${sel('repDays',[['7','Last 7 days'],['30','Last 30 days'],['90','Last 90 days']],String(n))}
+  <span class="sp"></span>${B('⬇ Download CSV','anCsv',{})}</div>
+  <div class="small muted mt8">${sc==='all'?'Everyone in the company':'Everyone who reports to you, directly or through their managers'} · ${T.length} people</div></div>
+ <div class="grid g6 mt">${stat('People',T.length,sc==='all'?'Company':'Your team','👥')}${stat('Attendance',r0(avg(a.map(x=>x.rate)))+'%',`Last ${n} days`,'📅')}${stat('Punctuality',r0(avg(a.map(x=>x.punct)))+'%','On-time arrivals','⏰')}${stat('Avg KPI',r0(avg(P.map(x=>x.k)))+'%','This month','🎯')}${stat('Overall score',r0(avg(P.map(x=>x.p))),'Average','⚡')}${stat('Needs support',P.filter(x=>x.p<75).length,'Score below 75','🚩')}</div>
+ <div class="grid g2 mt"><div class="card"><h3>Overall score by department</h3><div class="chartbox"><canvas id="cAnD"></canvas></div></div><div class="card"><h3>Performance bands</h3><div class="chartbox"><canvas id="cBand"></canvas></div></div></div>
+ <div class="card mt"><h3>Team performance — ranked</h3><div class="tbl"><table><tr><th>#</th><th>Employee</th><th>Branch</th><th>Attendance</th><th>Punctuality</th><th>Lates</th><th>Absences</th><th>KPI</th><th>Tasks</th><th>Overall</th></tr>
+ ${P.map((x,i)=>`<tr><td>${i+1}</td><td>${person(x.e.id)}</td><td class="small">${esc(shortSite(homeSite(x.e).name))}</td><td>${r0(x.a.rate)}%</td><td>${r0(x.a.punct)}%</td><td>${x.a.late}</td><td>${x.a.absent}</td><td>${r0(x.k)}%</td><td>${r0(x.t)}%</td><td><b>${r0(x.p)}</b> ${chip(band(x.p)[0],BC2(x.p))}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">No one matches these filters.</td></tr>'}</table></div></div>`}
+const BC2=p=>p>=90?'green':p>=75?'blue':'red';
+function pgAnalyticsAfter(){const T=anList(),n=S.repDays;const deps=[...new Set(T.map(e=>e.dept))];
+ mk('cAnD',{type:'bar',data:{labels:deps,datasets:[{label:'Overall score',data:deps.map(d=>r0(avg(T.filter(e=>e.dept===d).map(e=>prod(e.id,n))))),backgroundColor:D.settings.brand,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{y:{suggestedMin:50,suggestedMax:110}}}});bandChart(T)}
 /* ===================== executive ===================== */
-function deptStats(){const deps=[...new Set(active().map(e=>e.dept))];return deps.map(d=>{const E=active().filter(e=>e.dept===d&&e.role!=='executive');const a=E.map(e=>attSum(e.id)),ap=E.map(e=>attSum(e.id,30,30));
+function deptStats(){const deps=[...new Set(active().map(e=>e.dept))];return deps.map(d=>{const E=active().filter(e=>e.dept===d&&!TOP.includes(e.role));const a=E.map(e=>attSum(e.id)),ap=E.map(e=>attSum(e.id,30,30));
  return{d,n:E.length,att:avg(a.map(x=>x.rate)),attP:avg(ap.map(x=>x.rate)),pun:avg(a.map(x=>x.punct)),punP:avg(ap.map(x=>x.punct)),kpi:avg(E.map(e=>Math.min(kpiScore(e.id),120))),kpiP:avg(E.map(e=>lastKpi(e.id)??kpiScore(e.id))),prod:avg(E.map(e=>prod(e.id))),risk:E.filter(e=>flags(e.id).length).length,E}})}
 function insights(){const out=[];const DS=deptStats();
  DS.forEach(x=>{const dp=x.pun-x.punP;if(Math.abs(dp)>=3)out.push({i:dp<0?'📉':'📈',t:`${x.d} punctuality ${dp<0?'fell':'rose'} from ${r0(x.punP)}% to ${r0(x.pun)}% vs the previous 30 days.`,ev:`${x.n} employees · attendance records`});
   const dk=x.kpi-x.kpiP;if(Math.abs(dk)>=3)out.push({i:dk<0?'📉':'📈',t:`${x.d} average KPI ${dk<0?'dropped':'improved'} ${Math.abs(r0(dk))} pts (${r0(x.kpiP)}% → ${r0(x.kpi)}%).`,ev:'Monthly KPI scorecards'})});
- const E=active().filter(e=>e.role!=='executive');
+ const E=active().filter(e=>!TOP.includes(e.role));
  E.forEach(e=>{const l=lastKpi(e.id),c=kpiScore(e.id);if(l!=null&&l-c>=10)out.push({i:'⚠️',t:`${e.name}'s KPI declined ${r0(l-c)} pts this month (${l}% → ${r0(c)}%). Suggested coaching topic: ${D.kpis[e.id].slice().sort((a,b)=>a.actual/a.target-b.actual/b.target)[0].name}.`,ev:'KPI results vs last month'})});
  const rep=E.filter(e=>attSum(e.id).late>=4&&D.acc.some(a=>a.emp===e.id&&a.issue==='Tardiness'));rep.forEach(e=>out.push({i:'🔁',t:`${e.name} has repeated lateness (${attSum(e.id).late} in 30 days) despite prior coaching — consider the next step on the ladder.`,ev:'Attendance + coaching history'}));
  const best=E.map(e=>({e,p:prod(e.id)})).sort((a,b)=>b.p-a.p)[0];if(best)out.push({i:'🏆',t:`${best.e.name} leads the company at ${r0(best.p)} productivity — a strong Employee of the Month candidate.`,ev:'Productivity score'});
@@ -674,7 +714,7 @@ function insights(){const out=[];const DS=deptStats();
  return out}
 const pendingApprovalsAll=()=>[...D.leaves.filter(l=>l.status==='Pending'),...D.reqs.filter(q=>q.status==='Pending')];
 function pgExec(){
- const E=active().filter(e=>e.role!=='executive');const DS=deptStats();const a=E.map(e=>attSum(e.id));
+ const E=active().filter(e=>!TOP.includes(e.role));const DS=deptStats();const a=E.map(e=>attSum(e.id));
  const risks=[['⏰','Chronic lateness (4+ lates/30d)',E.filter(e=>attSum(e.id).late>=4)],['🚫','Absenteeism (2+ absences/30d)',E.filter(e=>attSum(e.id).absent>=2)],['📉','Below 75% KPI',E.filter(e=>kpiScore(e.id)<75)],['📍','Unverified / off-site punches',E.filter(e=>unverified(e.id)>=2)],['🛡️','Open PIPs & warnings',E.filter(e=>D.acc.some(x=>x.emp===e.id&&x.status==='Open'&&x.type!=='Coaching'))],['⌛','2+ overdue tasks',E.filter(e=>taskStats(e.id).overdue>=2)]];
  return`<div class="grid g6">${stat('Headcount',E.length,`${DS.length} departments`,'👥')}${stat('Attendance rate',r0(avg(a.map(x=>x.rate)))+'%','Company, 30 days','📅')}${stat('Punctuality',r0(avg(a.map(x=>x.punct)))+'%','On-time arrivals','⏰')}${stat('Avg KPI',r0(avg(E.map(e=>kpiScore(e.id))))+'%','This month','📈')}${stat('Avg productivity',r0(avg(E.map(e=>prod(e.id)))),band(avg(E.map(e=>prod(e.id))))[0],'⚡')}${stat('At-risk employees',E.filter(e=>flags(e.id).length).length,'with 1+ risk flag','⚠️')}</div>
  <div class="grid g3 mt"><div class="card span2"><h3>KPI trend by department</h3><div class="chartbox"><canvas id="cDT"></canvas></div></div><div class="card"><h3>Performance bands</h3><div class="chartbox"><canvas id="cBand"></canvas></div></div></div>
@@ -685,7 +725,7 @@ function pgExec(){
 const trend=(c,p)=>{const d=c-p;if(Math.abs(d)<1)return'<span class="muted small">→</span>';return`<span class="small" style="color:${d>0?'var(--green)':'var(--red)'}">${d>0?'▲':'▼'}${Math.abs(r0(d))}</span>`};
 function pgExecAfter(){const DS=deptStats();
  mk('cDT',{type:'line',data:{labels:monthLabels(),datasets:DS.map((x,i)=>({label:x.d,data:monthLabels().map((_,m)=>r0(avg(x.E.map(e=>hist(e.id)[m]).filter(v=>v!=null)))),borderColor:DCOL[i%6],tension:.35}))},options:{scales:{y:{suggestedMin:60,suggestedMax:115}},plugins:{legend:{position:'bottom'}}}});
- bandChart(active().filter(e=>e.role!=='executive'))}
+ bandChart(active().filter(e=>!TOP.includes(e.role)))}
 function bandChart(T){const c=BANDS.map(b=>T.filter(e=>band(prod(e.id))[0]===b[1]).length);mk('cBand',{type:'doughnut',data:{labels:BANDS.map(b=>b[1]),datasets:[{data:c,backgroundColor:BANDS.map(b=>BC[b[2]])}]},options:{cutout:'60%',plugins:{legend:{position:'bottom'}}}})}
 
 /* ===================== attendance ===================== */
@@ -699,9 +739,9 @@ function pgAttendance(){
   <div class="tbl"><table><tr><th>Employee</th><th>Status</th><th>Shift</th><th>In</th><th>Out</th><th>Break</th><th>Worked</th><th>Late</th><th>UT</th><th>OT</th><th>In · proof</th><th>Out · proof</th><th></th></tr>
   ${L.map(e=>{const x=day(e.id,S.attDate),k=e.id+'|'+S.attDate;return`<tr><td>${person(e.id)}</td><td>${dayChips(x)}</td><td class="nw small">${x.shift?esc(x.shift.name)+' '+fmt12(x.shift.start):'—'}</td><td class="nw">${fmt12(x.in)}</td><td class="nw">${fmt12(x.out)}</td><td class="nw">${x.brk?x.brk+'m':'—'}</td><td>${x.worked!=null?x.worked.toFixed(1)+'h':'—'}</td><td class="nw">${x.lateMin?x.lateMin+'m':'—'}</td><td class="nw">${x.ut?hm(x.ut):'—'}</td><td class="nw">${x.ot?hm(x.ot):'—'}</td><td>${vCell(x.vin,k,'vin')}</td><td>${vCell(x.vout,k,'vout')}</td><td>${canManage(e.id)&&x.status!=='On Leave'?B('Edit','attEdit',{e:e.id},'sm ghost'):''}</td></tr>`}).join('')}</table></div></div>`}
  else if(tab==='summary'){body=`<div class="card"><h3>30-day attendance summary</h3><div class="tbl"><table><tr><th>Employee</th><th>On time</th><th>Late</th><th>Absent</th><th>Leave</th><th>Field/WFH</th><th>Attendance</th><th>Punctuality</th><th>Late</th><th>Undertime</th><th>OT (approved)</th><th>Missed out</th><th>Avg hrs</th></tr>
-  ${team().filter(e=>e.role!=='executive').map(e=>{const s=attSum(e.id);return`<tr><td>${person(e.id)}</td><td>${s.present}</td><td>${s.late?`<b style="color:var(--amber)">${s.late}</b>`:0}</td><td>${s.absent?`<b style="color:var(--red)">${s.absent}</b>`:0}</td><td>${s.leave}</td><td>${s.remote}</td><td><div class="row" style="flex-wrap:nowrap">${barH(s.rate,bandColor(s.rate))}<b>${r0(s.rate)}%</b></div></td><td>${r0(s.punct)}%</td><td class="nw">${hm(s.lateMin)}</td><td class="nw">${hm(s.ut)}</td><td>${s.otApproved}h</td><td>${s.mo?`<b style="color:var(--red)">${s.mo}</b>`:0}</td><td>${s.avgHrs.toFixed(1)}</td></tr>`}).join('')}</table></div></div>`}
+  ${team().filter(e=>!TOP.includes(e.role)).map(e=>{const s=attSum(e.id);return`<tr><td>${person(e.id)}</td><td>${s.present}</td><td>${s.late?`<b style="color:var(--amber)">${s.late}</b>`:0}</td><td>${s.absent?`<b style="color:var(--red)">${s.absent}</b>`:0}</td><td>${s.leave}</td><td>${s.remote}</td><td><div class="row" style="flex-wrap:nowrap">${barH(s.rate,bandColor(s.rate))}<b>${r0(s.rate)}%</b></div></td><td>${r0(s.punct)}%</td><td class="nw">${hm(s.lateMin)}</td><td class="nw">${hm(s.ut)}</td><td>${s.otApproved}h</td><td>${s.mo?`<b style="color:var(--red)">${s.mo}</b>`:0}</td><td>${s.avgHrs.toFixed(1)}</td></tr>`}).join('')}</table></div></div>`}
  else if(tab==='requests')body=reqTable([...D.leaves,...D.reqs].filter(x=>canManage(x.emp)||x.emp===S.user||isExec()));
- else if(tab==='schedule')body=scheduleView(team().filter(e=>e.role!=='executive'));
+ else if(tab==='schedule')body=scheduleView(team().filter(e=>!TOP.includes(e.role)));
  else body=kioskView();
  return`<div class="row">${tabs(T,'daily')}<span class="sp"></span>${isExec()?'':reqButtons()}</div>${body}`;
 }
@@ -735,7 +775,7 @@ function kioskTick(){const kc=$('#kc');if(!kc)return;const n=Date.now(),m=Math.f
 const bandLegend=()=>`<div class="bandrow">${BANDS.map(b=>`<span class="chip c-${b[2]}">${b[0]<0?'<60':b[0]+'+'} ${b[1]} — ${b[3]}</span>`).join('')}</div>`;
 function pgPerformance(){
  if(!isMgmt())return perfEmp(S.user);
- const T=team().filter(e=>e.role!=='executive');const tab=curTab('scores');
+ const T=team().filter(e=>!TOP.includes(e.role));const tab=curTab('scores');
  const head=tabs([['scores','Scorecards'],['targets','Daily & weekly targets']],'scores');
  if(tab==='targets')return head+targetsView(T);
  return head+`<div class="card" style="margin-bottom:16px"><b>Performance bands</b><div class="mt8">${bandLegend()}</div></div>
@@ -752,7 +792,7 @@ function targetsView(T){const P=S.tgtP,key=P==='day'?S.tgtD:wkStart(S.tgtD);cons
   return`<div class="temp"><div class="row">${person(e.id)}<span class="sp"></span>${ach!=null?scoreChip(ach):'<span class="muted small">no result yet</span>'}</div><div class="tgrid">${metricsOf(e.id).map((m,i)=>{const a=P==='day'?A0[m.name]:weekA(e.id,key,m);const x=achv(T0[m.name],a);
    return`<div class="tcell"><div class="lb">${esc(m.name)}${m.unit?' ('+m.unit+')':''}</div><label>Target</label><input class="inp" type="number" step="any" min="0" name="t|${e.id}|${i}" value="${T0[m.name]??''}" ${ro?'disabled':''}>${P==='day'?`<label>Actual</label><input class="inp" type="number" step="any" min="0" name="a|${e.id}|${i}" value="${a??''}" ${ro?'disabled':''}>`:`<div class="mini">Actual so far: ${fmtV(m,a)}</div>`}${x!=null?`<div class="mt8">${barH(Math.min(x,100),bandColor(x))}<div class="mini" style="color:${bandColor(x)}">${r0(x)}% achieved</div></div>`:''}</div>`}).join('')}</div></div>`}).join('')}</div>`}).join('')||'<div class="card empty mt">No team members to set targets for.</div>'}
  ${ro?'':`<div class="row mt"><span class="sp"></span>${B('Copy month-to-date results into scorecards','tgtSync',{},'ghost')}<button class="btn">Save ${P==='day'?'daily':'weekly'} targets</button></div>`}</form>`}
-function pgPerformanceAfter(){if(!isMgmt())return perfEmpAfter(S.user);if(curTab('scores')==='targets')return;const T=team().filter(e=>e.role!=='executive');const h=T.map(e=>hist(e.id));const ser=monthLabels().map((_,i)=>r0(avg(h.map(x=>x[i]).filter(v=>v!=null))));
+function pgPerformanceAfter(){if(!isMgmt())return perfEmpAfter(S.user);if(curTab('scores')==='targets')return;const T=team().filter(e=>!TOP.includes(e.role));const h=T.map(e=>hist(e.id));const ser=monthLabels().map((_,i)=>r0(avg(h.map(x=>x[i]).filter(v=>v!=null))));
  mk('cKpi',{type:'line',data:{labels:monthLabels(),datasets:[{label:'Avg KPI score %',data:ser,borderColor:D.settings.brand,backgroundColor:D.settings.brand+'22',fill:true,tension:.35},{label:'Target (100%)',data:ser.map(()=>100),borderColor:'#94a3b8',borderDash:[6,4],pointRadius:0}]},options:{scales:{y:{suggestedMin:60,suggestedMax:115}},plugins:{legend:{position:'bottom'}}}});bandChart(T)}
 function kpiTable(id,edit){const k=D.kpis[id]||[];const tw=sum(k.map(x=>+x.w))||1;
  return`<div class="tbl"><table><tr><th>KPI</th><th>Weight</th><th>Target</th><th>Actual</th><th>Achievement</th><th>Points</th></tr>${k.map((x,i)=>{const ach=x.target?x.actual/x.target*100:0;const f=v=>x.unit==='₱'?peso(v):v+(x.unit==='%'?'%':'');
@@ -769,7 +809,7 @@ function perfEmpAfter(id){mk('cMe',{type:'line',data:{labels:monthLabels(),datas
 
 /* ===================== tasks & goals ===================== */
 function pgGoals(){
- const tab=curTab('tasks');const T=team().filter(e=>e.role!=='executive');
+ const tab=curTab('tasks');const T=team().filter(e=>!TOP.includes(e.role));
  const ids=isMgmt()?(S.taskEmp==='all'?T.map(e=>e.id):[S.taskEmp]):[S.user];let body;
  if(tab==='tasks'){const tasks=D.tasks.filter(t=>ids.includes(t.emp));
   const col=(st,l)=>{let list=tasks.filter(t=>t.status===st).sort((a,b)=>st==='done'?b.due.localeCompare(a.due):a.due.localeCompare(b.due));const n=list.length;if(st==='done')list=list.slice(0,8);return`<div class="col"><h4>${l}<span class="chip c-gray">${n}</span></h4>${list.map(taskCard).join('')||'<div class="empty small">Empty</div>'}${n>list.length?`<div class="small muted" style="text-align:center">+ ${n-list.length} older completed</div>`:''}</div>`};
@@ -791,28 +831,36 @@ function pgCoaching(){
  if(!isMgmt())return coachEmp();
  const T=team();const ids=new Set(T.map(e=>e.id));const all=D.acc.filter(a=>ids.has(a.emp));const open=all.filter(a=>a.status==='Open');const tab=curTab('open');
  const list=(tab==='open'?open:tab==='closed'?all.filter(a=>a.status==='Closed'):all).sort((a,b)=>b.date.localeCompare(a.date));
- const fu=open.filter(a=>a.follow&&a.follow<=rel(7));const fl=T.filter(e=>e.role!=='executive').flatMap(e=>flags(e.id).map(f=>({...f,id:e.id})));
+ const fu=open.filter(a=>a.follow&&a.follow<=rel(7));const fl=T.filter(e=>!TOP.includes(e.role)).flatMap(e=>flags(e.id).map(f=>({...f,id:e.id})));
  return`<div class="grid g4">${stat('Open cases',open.length,'Coaching, warnings, PIPs, incidents','📂')}${stat('Awaiting acknowledgment',open.filter(a=>!a.ack).length,'Employee has not signed off','✍️')}${stat('Follow-ups due ≤7 days',fu.length,fu.filter(a=>a.follow<todayStr).length+' overdue','📆')}${stat('Closed (90 days)',all.filter(a=>a.status==='Closed'&&a.date>=rel(-90)).length,'with recorded outcome','✔️')}</div>
  <div class="card mt"><h3>Progressive discipline ladder</h3><div class="ladder">${LADDER.map((l,i)=>`<span style="border-left:3px solid ${TYB[l]}">${i+1}. ${l}</span>${i<3?'<em>→</em>':''}`).join('')}<em>→</em><span>HR review</span></div><div class="small muted mt8">Next step is suggested from the employee's history on the same issue (180 days). Every record captures the root cause, agreed actions, an improvement target, an owner and a follow-up date.</div></div>
  ${fl.length?`<div class="card mt"><h3>🚩 Flags without action</h3>${fl.slice(0,8).map(f=>`<div class="flag">${av(f.id)}<div class="txt"><b>${esc(emp(f.id).name)}</b> · <span class="small">${esc(f.t)}</span><div class="small muted">Suggested: ${esc(suggestNext(f.id,f.issue).next)}</div></div>${canManage(f.id)?B('Log','accNew',{e:f.id,i:f.issue},'sm'):''}</div>`).join('')}</div>`:''}
  <div class="row mt">${tabs([['open',`Open (${open.length})`],['closed','Closed'],['all','All']],'open')}<span class="sp"></span>${isExec()?'':B('+ New coaching record','accNew')}</div>
  ${list.map(recCard).join('')||'<div class="card empty">No records.</div>'}`}
 function recCard(a){const od=a.status==='Open'&&a.follow&&a.follow<todayStr;const last=(a.updates||[]).slice(-1)[0];
- return`<div class="rec" style="border-left-color:${TYB[a.type]||'#999'}"><div class="row">${person(a.emp)}<span class="sp"></span>${chip(a.type,TYC[a.type]||'gray')} ${stChip(a.status)} ${a.ack?chip('✓ Acknowledged','green'):chip('Not acknowledged','red')}${last?' '+chip(last.prog,last.prog==='Improving'||last.prog==='On track'?'green':'red'):''}</div>
- <dl><dt>Issue</dt><dd><b>${esc(a.issue)}</b> · ${fmtDate(a.date)} · owner ${esc(emp(a.by).name)}</dd><dt>What happened</dt><dd>${esc(a.details)}</dd>${a.root?`<dt>Root cause</dt><dd>${esc(a.root)}</dd>`:''}<dt>Agreed actions</dt><dd>${esc(a.plan)}</dd>${a.target?`<dt>Improvement target</dt><dd>🎯 ${esc(a.target)}</dd>`:''}${a.follow?`<dt>Follow-up</dt><dd ${od?'style="color:var(--red);font-weight:600"':''}>${fmtDate(a.follow)}${od?' · overdue':''}</dd>`:''}${a.empNote?`<dt>Employee comment</dt><dd>“${esc(a.empNote)}”</dd>`:''}${a.outcome?`<dt>Outcome</dt><dd>${esc(a.outcome)}</dd>`:''}</dl>
+ return`<div class="rec" style="border-left-color:${TYB[a.type]||'#999'}"><div class="row">${person(a.emp)}<span class="sp"></span>${chip(a.type,TYC[a.type]||'gray')} ${stChip(a.status)} ${a.sig?chip('✍️ Signed','green'):a.ack?chip('✓ Acknowledged','green'):chip('Not signed','red')}${last?' '+chip(last.prog,last.prog==='Improving'||last.prog==='On track'?'green':'red'):''}</div>
+ <dl><dt>Issue</dt><dd><b>${esc(a.issue)}</b> · ${fmtDate(a.date)} · owner ${esc(emp(a.by).name)}</dd><dt>What happened</dt><dd>${esc(a.details)}</dd>${a.root?`<dt>Root cause</dt><dd>${esc(a.root)}</dd>`:''}<dt>Agreed actions</dt><dd>${esc(a.plan)}</dd>${a.target?`<dt>Improvement target</dt><dd>🎯 ${esc(a.target)}</dd>`:''}${a.follow?`<dt>Follow-up</dt><dd ${od?'style="color:var(--red);font-weight:600"':''}>${fmtDate(a.follow)}${od?' · overdue':''}</dd>`:''}${a.empNote?`<dt>Employee comment</dt><dd>“${esc(a.empNote)}”</dd>`:''}${a.outcome?`<dt>Outcome</dt><dd>${esc(a.outcome)}</dd>`:''}${a.sig?`<dt>Employee signature</dt><dd><img src="${a.sig}" alt="Signature" class="sigimg"><div class="small muted">Signed by ${esc(emp(a.emp).name)} · ${new Date(a.sigAt).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'})} · final</div></dd>`:''}</dl>
  ${(a.updates||[]).length?`<div class="mt8"><b class="small">Progress</b>${a.updates.map(u=>`<div class="upd"><b>${fmtShort(u.date)}</b> · ${esc(u.prog)} — ${esc(u.text)} <span class="muted">(${esc(emp(u.by).name)})</span></div>`).join('')}</div>`:''}
- <div class="row" style="margin-top:10px"><span class="sp"></span>${a.emp===S.user&&!a.ack?B('Acknowledge','accAck',{id:a.id},'sm'):''}${a.status==='Open'&&canManage(a.emp)?B('+ Follow-up','accUpd',{id:a.id},'sm ghost')+' '+B('Close case','accClose',{id:a.id},'sm ghost'):''}</div></div>`}
+ <div class="row" style="margin-top:10px"><span class="sp"></span>${a.emp===S.user&&!a.ack?B('✍️ Read & sign','accAck',{id:a.id},'sm'):''}${a.status==='Open'&&canManage(a.emp)?B('+ Follow-up','accUpd',{id:a.id},'sm ghost')+' '+B('Close case','accClose',{id:a.id},'sm ghost'):''}</div></div>`}
+let SIG=null,SIGPAD=null;
+function sigInit(){const c=$('#sigPad');if(!c)return;const r=c.getBoundingClientRect(),dp=window.devicePixelRatio||1;c.width=r.width*dp;c.height=r.height*dp;const x=c.getContext('2d');x.scale(dp,dp);x.lineWidth=2.4;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#0f172a';
+ let down=false,last=null;const pt=e=>{const b=c.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+ SIGPAD={drawn:false,clear(){x.clearRect(0,0,c.width,c.height);this.drawn=false;$('#sigHint').style.display=''},data(){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const ox=o.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,o.width,o.height);ox.drawImage(c,0,0);return o.toDataURL('image/jpeg',.7)}};
+ c.addEventListener('pointerdown',e=>{down=true;last=pt(e);c.setPointerCapture(e.pointerId);x.beginPath();x.arc(last[0],last[1],1.1,0,7);x.fillStyle='#0f172a';x.fill();SIGPAD.drawn=true;$('#sigHint').style.display='none'});
+ c.addEventListener('pointermove',e=>{if(!down)return;const p=pt(e);x.beginPath();x.moveTo(last[0],last[1]);x.lineTo(p[0],p[1]);x.stroke();last=p});
+ ['pointerup','pointercancel','pointerleave'].forEach(t=>c.addEventListener(t,()=>down=false))}
+function sigConfirm(id){openModal('Is this your final signature?',`<div class="sigwrap" style="height:auto;background:#fff"><img src="${SIG.img}" alt="Your signature" style="width:100%;display:block"></div>${SIG.c?`<div class="small mt8"><b>Your comment:</b> “${esc(SIG.c)}”</div>`:''}<div class="warn mt"><b>Once saved, your signature is final</b> and can't be changed or removed. It will be attached to this coaching form.</div><div class="row mt"><span class="sp"></span>${B('No, sign again','sigAgain',{id},'ghost')}${B('Yes, save final signature','sigSave',{id})}</div>`)}
 function coachEmp(){const L=D.acc.filter(a=>a.emp===S.user).sort((a,b)=>(a.ack-b.ack)||b.date.localeCompare(a.date));
- return`<div class="note" style="margin-bottom:16px">Your coaching sessions, improvement plans and formal records. Please read and <b>acknowledge</b> new items — you can add your own comment.</div>${L.map(recCard).join('')||'<div class="card empty">No records. Keep it up! 🌟</div>'}`}
+ return`<div class="note" style="margin-bottom:16px">Your coaching sessions, improvement plans and formal records. Please read and <b>sign</b> new items — you can add your own comment. Your signature is final once saved.</div>${L.map(recCard).join('')||'<div class="card empty">No records. Keep it up! 🌟</div>'}`}
 
 /* ===================== recognition ===================== */
-function candidates(){const E=active().filter(e=>!['executive'].includes(e.role));const P=E.map(e=>({e,p:prod(e.id),a:attSum(e.id),k:kpiScore(e.id),l:lastKpi(e.id),d:D.tasks.filter(t=>t.emp===e.id&&t.status==='done'&&t.due>=rel(-30)).length}));
+function candidates(){const E=active().filter(e=>!TOP.includes(e.role));const P=E.map(e=>({e,p:prod(e.id),a:attSum(e.id),k:kpiScore(e.id),l:lastKpi(e.id),d:D.tasks.filter(t=>t.emp===e.id&&t.status==='done'&&t.due>=rel(-30)).length}));
  const eotm=[...P].sort((a,b)=>b.p-a.p)[0];const perfect=P.filter(x=>x.a.late===0&&x.a.absent===0&&x.a.mo===0&&x.a.work>5);
  const imp=P.filter(x=>x.l!=null).sort((a,b)=>(b.k-b.l)-(a.k-a.l))[0];const prodA=[...P].sort((a,b)=>b.d-a.d||b.k-a.k)[0];
  return[['Employee of the Month',eotm?[eotm.e]:[],eotm?`Highest overall score (${r0(eotm.p)})`:''],['Perfect Attendance',perfect.map(x=>x.e),'No lates, absences or missed clock-outs in 30 days'],['Most Improved',imp?[imp.e]:[],imp?`KPI ${imp.l}% → ${r0(imp.k)}% (+${r0(imp.k-imp.l)})`:''],['Productivity Award',prodA?[prodA.e]:[],prodA?`${prodA.d} tasks completed in 30 days`:'']]}
 function pgRecognition(){
  const canGive=isMgmt()&&!isExec();const month=todayStr.slice(0,7);
- const lb=active().filter(e=>e.role!=='executive').map(e=>({e,p:points(e.id)})).filter(x=>x.p).sort((a,b)=>b.p-a.p);
+ const lb=active().filter(e=>!TOP.includes(e.role)).map(e=>({e,p:points(e.id)})).filter(x=>x.p).sort((a,b)=>b.p-a.p);
  const wall=[...D.awards].sort((a,b)=>b.date.localeCompare(a.date));
  const mine=D.awards.filter(a=>a.emp===S.user);
  return`${!isMgmt()||mine.length?`<div class="card" style="margin-bottom:16px"><h3>My badges · ⭐ ${points(S.user)} points</h3><div class="row">${mine.map(a=>`<div class="badge"><span class="e">${AWARDS[a.type]?.[0]||'🏅'}</span><b>${esc(a.type)}</b><span class="small muted">${fmtShort(a.date)}</span></div>`).join('')||'<div class="muted">No badges yet — keep going!</div>'}</div></div>`:''}
@@ -822,9 +870,15 @@ function pgRecognition(){
 
 /* ===================== employees ===================== */
 function pgEmployees(){const tab=curTab('dir');const T=isHRA()?D.emps:team();
- return`<div class="row">${tabs([['dir','Directory'],['org','Org chart']],'dir')}<span class="sp"></span>${tab==='dir'?`<input class="inp" style="max-width:300px;flex:1" placeholder="🔍 Search name, position, dept…" data-inp="empSearch">`:''}${isHRA()?B('+ Add employee','empForm'):''}</div>
+ const pr=(D.accessReq||[]).filter(x=>x.status==='Pending').length;
+ return`<div class="row">${tabs([['dir','Directory'],['org','Org chart'],...(isHRA()?[['access',`App access${pr?' ('+pr+')':''}`]]:[])],'dir')}<span class="sp"></span>${tab==='dir'?`<input class="inp" style="max-width:300px;flex:1" placeholder="🔍 Search name, position, dept…" data-inp="empSearch">`:''}${isHRA()?B('+ Add employee','empForm'):''}</div>
  ${tab==='dir'?`<div class="grid g3" id="empGrid">${T.map(e=>{const p=prod(e.id);const f=flags(e.id).length;return`<div class="card empcard" data-act="empView" data-e="${e.id}" data-q="${esc((e.name+' '+e.position+' '+e.dept+' '+e.role).toLowerCase())}" style="${e.status!=='Active'?'opacity:.55':''}"><div class="row">${av(e.id,true)}<div style="flex:1;min-width:0"><b style="font-size:15px">${esc(e.name)}</b><div class="small muted">${esc(e.position)} · ${esc(e.dept)}</div><div class="small muted">🏢 ${esc(shortSite(homeSite(e).name))}${e.anySite?' +all':''} · ${ROLES[e.role]} · ${e.mgr?'reports to '+esc(emp(e.mgr).name):'top of org'}</div></div></div><div class="row mt8">${e.status!=='Active'?chip(e.status,'gray'):e.role==='executive'?chip('Executive','purple'):scoreChip(p)}${f?chip('🚩 '+f,'red'):''}${pendingAck(e.id)?chip('✍️ '+pendingAck(e.id),'amber'):''}${points(e.id)?chip('⭐ '+points(e.id),'green'):''}</div></div>`}).join('')}</div>`
- :`<div class="card org"><ul>${D.emps.filter(e=>!e.mgr&&e.status==='Active').map(e=>orgNode(e.id)).join('')}</ul></div>`}`}
+ :tab==='access'?accessTab():`<div class="card org"><ul>${D.emps.filter(e=>!e.mgr&&e.status==='Active').map(e=>orgNode(e.id)).join('')}</ul></div>`}`}
+const ACC={approved:['✓ Approved','green'],pending:['Waiting for approval','amber'],revoked:['Removed','red'],none:['No email','gray']};
+function accessTab(){const R=(D.accessReq||[]).filter(x=>x.status==='Pending');const L=D.emps.slice().sort((a,b)=>(a.access==='approved')-(b.access==='approved')||a.name.localeCompare(b.name));
+ return`<div class="note mt">Only these emails can sign in to the web and the app. HR adds the email in each employee's details; HR or Admin approves it. Removing access signs the person out.</div>
+ ${R.length?`<div class="card mt"><h3>📨 Access requests (${R.length})</h3>${R.map(x=>`<div class="flag"><span style="font-size:20px">✉️</span><div class="txt"><b>${esc(x.name)}</b> · ${esc(x.email)}<div class="small muted">${esc(x.note||'')} · ${fmtShort(x.date)}</div></div>${B('Approve','reqApprove',{id:x.id},'sm')} ${B('Decline','reqDecline',{id:x.id},'sm ghost')}</div>`).join('')}</div>`:''}
+ <div class="card mt"><h3>🔐 Authorized emails</h3>${L.map(e=>{const st=e.status!=='Active'?'revoked':e.email?(e.access||'pending'):'none';const[l,c]=ACC[st];return`<div class="flag" style="flex-wrap:wrap">${av(e.id)}<div class="txt" style="min-width:150px"><b>${esc(e.name)}</b><div class="small muted" style="word-break:break-all">${esc(e.email||'No email yet')}</div></div><div class="row" style="gap:6px">${chip(e.status!=='Active'?e.status:l,c)}${e.status!=='Active'||!e.email||e.id===AUTH?'':st==='approved'?B('Remove','accSet',{e:e.id,v:'revoked'},'sm ghost'):B('Approve','accSet',{e:e.id,v:'approved'},'sm')}</div></div>`}).join('')}</div>`}
 function orgNode(id){const e=emp(id);const kids=D.emps.filter(x=>x.mgr===id&&x.status==='Active');return`<li><div class="onode" data-act="empView" data-e="${id}">${av(id)}<div><b>${esc(e.name)}</b><small>${esc(e.position)} · ${ROLES[e.role]}</small></div>${kids.length?chip(kids.length,'gray'):''}</div>${kids.length?`<ul>${kids.map(k=>orgNode(k.id)).join('')}</ul>`:''}</li>`}
 function profile(id){const e=emp(id),a=attSum(id),k=kpiScore(id),t=taskStats(id),p=prod(id);const sh=shiftOf(e);
  const recs=D.acc.filter(x=>x.emp===id).sort((a,b)=>b.date.localeCompare(a.date));const g=D.goals.filter(x=>x.emp===id);const aw=D.awards.filter(x=>x.emp===id);
@@ -838,23 +892,23 @@ function profile(id){const e=emp(id),a=attSum(id),k=kpiScore(id),t=taskStats(id)
  <div class="row mt"><span class="sp"></span>${isHRA()?B('Edit details','empForm',{e:id},'ghost'):''}${canManage(id)?B('Coach','accNew',{e:id},'ghost')+' '+B('Recognize','awardNew',{e:id},'ghost')+' '+B('Scorecard','kpiView',{e:id}):''}</div>`}
 
 /* ===================== reports ===================== */
-function repRows(kind){const n=S.repDays,T=team().filter(e=>e.role!=='executive');const from=rel(-(n-1));
+function repRows(kind,TT){const n=S.repDays,T=TT||team().filter(e=>!TOP.includes(e.role));const from=rel(-(n-1));
  if(kind==='scorecard'){const r=[['Employee','Position','Department','Role','Attendance %','Punctuality %','Lates','Absences','Undertime (min)','Approved OT (h)','KPI %','Task completion %','Open coaching cases','Recognition points','Overall score','Band']];
   T.forEach(e=>{const a=attSum(e.id,n),p=prod(e.id,n);r.push([e.name,e.position,e.dept,ROLES[e.role],r0(a.rate),r0(a.punct),a.late,a.absent,a.ut,a.otApproved,r0(kpiScore(e.id)),r0(taskStats(e.id).rate),D.acc.filter(x=>x.emp===e.id&&x.status==='Open').length,points(e.id),r0(p),band(p)[0]])});return r}
  if(kind==='attendance'){const r=[['Date','Employee','Department','Shift','Status','Work mode','Time in','Time out','Break (min)','Worked (h)','Late (min)','Undertime (min)','OT (min)','Face check','Location check','Distance (m)']];
   for(let k=n-1;k>=0;k--){const d=rel(-k);T.forEach(e=>{const x=day(e.id,d);if(['—'].includes(x.status))return;const v=x.vin||{};r.push([d,e.name,e.dept,x.shift?x.shift.name:'',x.status,x.mode||'',x.in||'',x.out||'',x.brk||0,x.worked!=null?x.worked.toFixed(2):'',x.lateMin||0,x.ut||0,x.ot||0,x.in?(v.live?'Live':v.method||'n/a'):'',x.in?(v.fence||'n/a'):'',v.dist??''])})}return r}
  if(kind==='requests'){const r=[['Filed','Employee','Type','Date / from','To','Days/Hours','Reason','Status','Decided by']];[...D.leaves,...D.reqs].filter(x=>T.some(e=>e.id===x.emp)).forEach(x=>r.push([x.filed,emp(x.emp).name,x.kind||x.type+' leave',x.date||x.from,x.to||'',x.kind?x.hours||'':leaveDays(x),x.reason,x.status,x.by?emp(x.by).name:'']));return r}
- if(kind==='coaching'){const r=[['Date','Employee','Type','Issue','Root cause','Details','Agreed actions','Target','Follow-up','Status','Acknowledged','Owner','Outcome']];D.acc.filter(x=>T.some(e=>e.id===x.emp)).forEach(a=>r.push([a.date,emp(a.emp).name,a.type,a.issue,a.root||'',a.details,a.plan,a.target||'',a.follow,a.status,a.ack?'Yes':'No',emp(a.by).name,a.outcome||'']));return r}
+ if(kind==='coaching'){const r=[['Date','Employee','Type','Issue','Root cause','Details','Agreed actions','Target','Follow-up','Status','Acknowledged','Signed on','Owner','Outcome']];D.acc.filter(x=>T.some(e=>e.id===x.emp)).forEach(a=>r.push([a.date,emp(a.emp).name,a.type,a.issue,a.root||'',a.details,a.plan,a.target||'',a.follow,a.status,a.ack?'Yes':'No',a.sigAt?a.sigAt.slice(0,16).replace('T',' '):'',emp(a.by).name,a.outcome||'']));return r}
  if(kind==='recognition'){const r=[['Date','Employee','Award','Points','Note','Given by']];D.awards.forEach(a=>r.push([a.date,emp(a.emp).name,a.type,a.points,a.note||'',emp(a.by).name]));return r}}
 const toCSV=rows=>rows.map(r=>r.map(c=>{c=String(c??'');return/[",\n]/.test(c)?`"${c.replace(/"/g,'""')}"`:c}).join(',')).join('\n');
 const REPORTS=[['scorecard','📊','Employee scorecard','Attendance, KPI, tasks, coaching and overall score per employee'],['attendance','🕘','Attendance detail','Every day per employee: times, breaks, late, undertime, OT and verification'],['requests','📝','Leave, correction & OT requests','All requests with status and approver'],['coaching','🛡️','Coaching log','Records, root causes, actions, targets and outcomes'],['recognition','🏆','Recognition','Awards and points']];
-function pgReports(){const n=S.repDays;const T=team().filter(e=>e.role!=='executive');
+function pgReports(){const n=S.repDays;const T=team().filter(e=>!TOP.includes(e.role));
  return`<div class="row" style="margin-bottom:16px"><b>Period:</b><select class="inp" data-chg="repDays">${[7,14,30,60].map(d=>`<option value="${d}" ${d==n?'selected':''}>Last ${d} days</option>`).join('')}</select><span class="small muted">Reports reconcile with the records on each page.</span></div>
  <div class="grid g3">${REPORTS.map(([k,i,t,d])=>`<div class="card"><h3>${i} ${t}</h3><div class="small muted" style="min-height:36px">${d}</div><div class="row mt8">${B('⬇ Download CSV','csv',{k},'sm')}${B('Copy','csvCopy',{k},'sm ghost')}</div></div>`).join('')}</div>
  <div class="grid g2 mt"><div class="card"><h3>Department comparison</h3><div class="chartbox"><canvas id="cDept"></canvas></div></div><div class="card"><h3>Coaching mix</h3><div class="chartbox"><canvas id="cAcc"></canvas></div></div></div>
  <div class="card mt"><h3>Scorecard preview</h3><div class="tbl"><table><tr><th>Employee</th><th>Attend.</th><th>Punct.</th><th>Lates</th><th>Absent</th><th>UT</th><th>KPI</th><th>Tasks</th><th>Overall</th></tr>
  ${T.map(e=>{const a=attSum(e.id,n);return`<tr><td>${person(e.id)}</td><td>${r0(a.rate)}%</td><td>${r0(a.punct)}%</td><td>${a.late}</td><td>${a.absent}</td><td class="nw">${hm(a.ut)}</td><td>${r0(kpiScore(e.id))}%</td><td>${r0(taskStats(e.id).rate)}%</td><td>${scoreChip(prod(e.id,n))}</td></tr>`}).join('')}</table></div></div>`}
-function pgReportsAfter(){const T=team().filter(e=>e.role!=='executive');const deps=[...new Set(T.map(e=>e.dept))];const n=S.repDays;const f=fn=>deps.map(d=>r0(avg(T.filter(e=>e.dept===d).map(e=>fn(e.id)))));
+function pgReportsAfter(){const T=team().filter(e=>!TOP.includes(e.role));const deps=[...new Set(T.map(e=>e.dept))];const n=S.repDays;const f=fn=>deps.map(d=>r0(avg(T.filter(e=>e.dept===d).map(e=>fn(e.id)))));
  mk('cDept',{type:'bar',data:{labels:deps,datasets:[{label:'Attendance %',data:f(id=>attSum(id,n).rate),backgroundColor:'#16a34a',borderRadius:6},{label:'KPI %',data:f(id=>Math.min(100,kpiScore(id))),backgroundColor:D.settings.brand,borderRadius:6},{label:'Overall',data:f(id=>prod(id,n)),backgroundColor:'#f59e0b',borderRadius:6}]},options:{scales:{y:{min:0,max:100}},plugins:{legend:{position:'bottom'}}}});
  const ids=new Set(T.map(e=>e.id));const types=ACC_TYPES.filter(t=>D.acc.some(a=>a.type===t&&ids.has(a.emp)));
  mk('cAcc',{type:'doughnut',data:{labels:types,datasets:[{data:types.map(t=>D.acc.filter(a=>a.type===t&&ids.has(a.emp)).length),backgroundColor:types.map(t=>TYB[t])}]},options:{cutout:'60%',plugins:{legend:{position:'bottom'}}}})}
@@ -868,7 +922,7 @@ function copyBox(text){openModal('Copy report',`<div class="small muted" style="
 function pgAudit(){return`<div class="card"><div class="row" style="margin-bottom:10px"><b>Audit trail</b><span class="small muted">Edits, approvals, KPI changes, settings and access to sensitive records</span><span class="sp"></span><input class="inp" placeholder="🔍 Filter…" data-inp="auditQ"></div><div class="tbl"><table id="audT"><tr><th>When</th><th>User</th><th>Action</th><th>Details</th></tr>${D.audit.map(a=>`<tr data-q="${esc((emp(a.user).name+' '+a.action+' '+a.detail).toLowerCase())}"><td class="nw small">${new Date(a.at).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td>${person(a.user,ROLES[emp(a.user).role])}</td><td>${chip(a.action,'gray')}</td><td>${esc(a.detail)}</td></tr>`).join('')}</table></div></div>`}
 
 /* ===================== settings ===================== */
-function pgSettings(){const s=D.settings;const adm=role()==='admin';const pre=['#0f766e','#4f46e5','#0ea5e9','#16a34a','#dc2626','#ea580c','#db2777','#1e293b'];
+function pgSettings(){const s=D.settings;const adm=isAdm();const pre=['#0f766e','#4f46e5','#0ea5e9','#16a34a','#dc2626','#ea580c','#db2777','#1e293b'];
  return`<form id="setform"><div class="grid g2">
  ${adm?`<div class="card"><h3>🏢 Company branding (white-label)</h3>${fld('Company name',`<input name="company" value="${esc(s.company)}">`)}${fld('Brand color',`<div class="row"><input type="color" name="brand" value="${s.brand}" style="width:60px;height:38px;padding:2px">${pre.map(c=>`<span class="swatch" style="background:${c}" data-act="swatch" data-c="${c}"></span>`).join('')}</div>`)}</div>`:''}
  <div class="card"><h3>🕘 Attendance policy</h3><div class="f2">${fld('Grace period (min)',`<input type="number" min="0" max="60" name="grace" value="${s.grace}">`)}${fld('Count OT after (min past shift end)',`<input type="number" min="0" name="otMin" value="${s.otMin}">`)}</div><div class="f2">${fld('Vacation leave / year',`<input type="number" name="vl" value="${s.vl}">`)}${fld('Sick leave / year',`<input type="number" name="sl" value="${s.sl}">`)}</div>
@@ -880,12 +934,38 @@ function pgSettings(){const s=D.settings;const adm=role()==='admin';const pre=['
  <div class="card"><h3>📈 KPI templates</h3><div class="small muted" style="margin-bottom:10px">KPI sets and weights per department — change them without redesigning the app.</div>${Object.entries(D.kpiT).map(([d,k])=>`<div class="flag"><div class="txt"><b>${esc(d)}</b><div class="small" style="margin-top:4px">${k.map(x=>`<div style="margin-bottom:4px">${esc(x.name)} <b>${x.w}%</b> <span class="kcat">${esc(x.cat||'')}</span> <span class="muted">· target ${x.unit==='₱'?peso(x.target):x.target+(x.unit==='%'?'%':'')}</span></div>`).join('')}</div></div>${B('Edit','kpiTEdit',{d},'sm ghost')}</div>`).join('')}<div class="mt8">${B('+ Add department','deptNew',{},'sm ghost')}</div></div>
  <div class="card"><h3>⚡ Overall score formula</h3><div class="f3">${fld('Attendance %',`<input type="number" name="wAtt" value="${s.wAtt}">`)}${fld('KPI %',`<input type="number" name="wKpi" value="${s.wKpi}">`)}${fld('Tasks %',`<input type="number" name="wTask" value="${s.wTask}">`)}</div><div class="small muted">Weights are normalized. Bands: ${BANDS.map(b=>b[1]).join(' · ')}.</div></div>
  <div class="card"><h3>🔔 Alerts</h3>${[['alMissed','Missed clock-in / clock-out'],['alApprovals','Pending approvals'],['alTargets','Missed KPI targets (below 75%)'],['alOverdue','Overdue tasks']].map(([k,l])=>`<label class="row" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" name="${k}" ${s[k]?'checked':''}> ${l}</label>`).join('')}</div>
- <div class="card"><h3>🔒 Security & privacy</h3><div class="small"><div class="flag"><div class="txt">Role-based access: ${Object.values(ROLES).join(', ')}</div>${chip('On','green')}</div><div class="flag"><div class="txt">Audit trail for edits, approvals, KPI and settings changes</div>${chip('On','green')}</div><div class="flag"><div class="txt">Privacy notice shown before first clock-in</div>${chip('On','green')}</div><div class="flag"><div class="txt">MFA for Admin/HR, encryption at rest, backups</div>${chip('Live version','gray')}</div></div><div class="small muted mt8">Review Philippine Data Privacy Act (RA 10173) obligations with a privacy/legal professional before deployment.</div>${adm?`<div class="mt">${B('Reset demo data','resetAsk',{},'red sm')}</div>`:''}</div>
+ <div class="card"><h3>🔒 Security & privacy</h3><label class="row" style="cursor:pointer;flex-wrap:nowrap;align-items:flex-start;margin-bottom:10px"><input type="checkbox" name="demoSwitch" ${s.demoSwitch!==false?'checked':''}> <span><b>Demo role switcher</b> — lets anyone signed in use "View as". Turn this off for live use so everyone sees only their own account.</span></label><div class="flag"><div class="txt">Sign-in only with emails added and approved by HR or Admin</div>${chip('On','green')}</div><div class="small"><div class="flag"><div class="txt">Role-based access: ${Object.values(ROLES).join(', ')}</div>${chip('On','green')}</div><div class="flag"><div class="txt">Audit trail for edits, approvals, KPI and settings changes</div>${chip('On','green')}</div><div class="flag"><div class="txt">Privacy notice shown before first clock-in</div>${chip('On','green')}</div><div class="flag"><div class="txt">MFA for Admin/HR, encryption at rest, backups</div>${chip('Live version','gray')}</div></div><div class="small muted mt8">Review Philippine Data Privacy Act (RA 10173) obligations with a privacy/legal professional before deployment.</div>${adm?`<div class="mt">${B('Reset demo data','resetAsk',{},'red sm')}</div>`:''}</div>
  </div><div class="row mt"><span class="sp"></span><button class="btn">Save settings</button></div></form>`}
 
 /* ===================== render ===================== */
-const PAGES={dashboard:[pgDashboard,()=>isMgmt()?dashMgmtAfter():dashEmpAfter()],exec:[pgExec,pgExecAfter],employees:[pgEmployees],attendance:[pgAttendance],performance:[pgPerformance,pgPerformanceAfter],goals:[pgGoals],coaching:[pgCoaching],recognition:[pgRecognition],reports:[pgReports,pgReportsAfter],audit:[pgAudit],settings:[pgSettings]};
+const PAGES={analytics:[pgAnalytics,pgAnalyticsAfter],dashboard:[pgDashboard,()=>isMgmt()?dashMgmtAfter():dashEmpAfter()],exec:[pgExec,pgExecAfter],employees:[pgEmployees],attendance:[pgAttendance],performance:[pgPerformance,pgPerformanceAfter],goals:[pgGoals],coaching:[pgCoaching],recognition:[pgRecognition],reports:[pgReports,pgReportsAfter],audit:[pgAudit],settings:[pgSettings]};
+const SKEY=KEY+'-session';let AUTH=null;try{AUTH=localStorage.getItem(SKEY)}catch(e){}
+if(AUTH){let v=null;try{v=localStorage.getItem(KEY+'-user')}catch(e){}if(!v||D.settings.demoSwitch===false)S.user=AUTH}
+const LG={step:'email',email:'',code:'',msg:''};
+function accessOk(e){return e&&e.status==='Active'&&e.access==='approved'&&e.email}
+function renderLogin(){const r=$('#root');const s=D.settings;
+ const demo=[['owner','Owner'],['admin','Admin'],['hr','HR'],['manager','Manager'],['supervisor','Supervisor'],['oic','OIC'],['employee','Employee'],['driver','Driver'],['accountmgr','Account Mgr']].map(([ro,l])=>{const e=D.emps.find(x=>x.role===ro&&accessOk(x));return e?`<button type="button" data-act="loginDemo" data-m="${esc(e.email)}">${l}</button>`:''}).join('');
+ const body=LG.step==='code'?`<h2>Check your email</h2><div class="small muted">We sent a 6-digit code to <b>${esc(LG.email)}</b>.</div><div class="note mt" style="font-size:13px">Demo: your code is <b>${LG.code}</b>. In the live version it's emailed to you.</div>
+  <form id="loginF" class="mt"><input class="inp" name="code" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code" autofocus><button class="btn">Sign in</button></form><div class="mt8 small" style="text-align:center"><a href="#" data-act="loginBack">Use a different email</a></div>`
+ :LG.step==='req'?`<h2>Request access</h2><div class="small muted">Your request goes to HR and Admin. You can sign in once they approve it.</div><form id="loginF" class="mt"><div class="fld"><label>Work email</label><input class="inp" name="email" type="email" required value="${esc(LG.email)}"></div><div class="fld"><label>Full name</label><input class="inp" name="name" required></div><div class="fld"><label>Position / branch</label><input class="inp" name="note" placeholder="e.g. Sales Associate, Mandaue"></div><button class="btn">Send request</button></form><div class="mt8 small" style="text-align:center"><a href="#" data-act="loginBack">Back to sign in</a></div>`
+ :`<h2>Sign in</h2><div class="small muted">Use the work email HR registered for you.</div><form id="loginF" class="mt"><input class="inp" name="email" type="email" required placeholder="you@company.ph" value="${esc(LG.email)}" autocomplete="email"><button class="btn">Continue</button></form>
+  ${LG.msg?`<div class="warn mt" style="font-size:13.5px">${LG.msg}</div>`:''}<div class="small muted mt">Only emails added and approved by HR or Admin can open WorkForce360.</div>
+  ${s.demoSwitch!==false&&demo?`<div class="mt" style="border-top:1px solid #e2e8f0;padding-top:12px"><div class="small muted">Demo accounts — tap to fill in:</div><div class="demoacc">${demo}</div></div>`:''}`;
+ r.innerHTML=`<div class="login"><div class="lbox"><div class="row"><div style="background:var(--brand);color:#fff;border-radius:12px;padding:10px 12px;font-weight:800;white-space:nowrap;flex:none">W360</div><div><b>${esc(s.company)}</b><div class="small muted">WorkForce360 by Jessie Cajandab</div></div></div>${body}</div></div>`;
+ const f=r.querySelector('#loginF input');if(f)setTimeout(()=>f.focus(),50)}
+function loginSubmit(form){const f=Object.fromEntries(new FormData(form));
+ if(LG.step==='email'){const em=(f.email||'').trim().toLowerCase();LG.email=em;const e=D.emps.find(x=>(x.email||'').toLowerCase()===em);
+  if(!e){LG.msg=`<b>This email isn't authorized.</b> Ask HR to add it to your employee details, or <a href="#" data-act="loginReq">request access</a>.`;return renderLogin()}
+  if(e.status!=='Active'||e.access==='revoked'){LG.msg='<b>Access removed.</b> Please contact HR.';log('Access',`Blocked sign-in: ${em} (removed)`,e.id);save();return renderLogin()}
+  if(e.access!=='approved'){LG.msg='<b>Waiting for approval.</b> HR or Admin needs to approve your access first.';return renderLogin()}
+  LG.code=String(Math.floor(100000+Math.random()*900000));LG.step='code';LG.msg='';return renderLogin()}
+ if(LG.step==='code'){if((f.code||'').trim()!==LG.code){toast('Wrong code — please check and try again');return}
+  const e=D.emps.find(x=>(x.email||'').toLowerCase()===LG.email);if(!accessOk(e))return;AUTH=e.id;S.user=e.id;S.view='';S.tabs={};try{localStorage.setItem(SKEY,AUTH)}catch(x){}LG.step='email';LG.msg='';log('Access','Signed in',e.id);save();render();toast('Welcome, '+e.name.split(' ')[0]+'!');return}
+ if(LG.step==='req'){const em=(f.email||'').trim().toLowerCase();if(D.accessReq.some(x=>x.email===em&&x.status==='Pending')){toast('A request for this email is already waiting');return}
+  D.accessReq.push({id:uid(),email:em,name:f.name,note:f.note||'',date:todayStr,status:'Pending'});save();LG.step='email';LG.email=em;LG.msg='✅ <b>Request sent.</b> You can sign in once HR or Admin approves it.';renderLogin()}}
 function render(){
+ if(!AUTH||!accessOk(emp(AUTH))){if(AUTH){AUTH=null;try{localStorage.removeItem(SKEY)}catch(e){}LG.msg='<b>Your access was removed.</b> Please contact HR.'}return renderLogin()}
+ if(D.settings.demoSwitch===false&&S.user!==AUTH)S.user=AUTH;
  document.documentElement.style.setProperty('--brand',D.settings.brand);
  const u=me();const nav=NAV[u.role];if(!nav.includes(S.view))S.view=nav[0];
  charts.forEach(c=>c.destroy());charts=[];kioskMin=-1;
@@ -894,10 +974,10 @@ function render(){
  const A=alerts();
  $('#root').innerHTML=`<aside class="side ${S.menu?'open':''}"><div class="brandbox"><div class="logo">W360</div><div><b>${esc(D.settings.company)}</b><small>WorkForce360 by Jessie Cajandab</small></div></div>
  <nav class="nav">${nav.map(v=>`<button type="button" class="${S.view===v?'on':''}" data-act="nav" data-v="${v}"><span class="ic">${NAVS[v][0]}</span>${navLabel(v)}${badge(v)}</button>`).join('')}</nav>
- <div class="sidefoot">Signed in as <b style="color:#e2e8f0">${esc(u.name)}</b><br>${ROLES[u.role]} · ${esc(u.position)}</div></aside><div class="scrim" data-act="menu"></div>
+ <div class="sidefoot">Signed in as <b style="color:#e2e8f0">${esc(emp(AUTH).name)}</b><br><span style="opacity:.8">${esc(emp(AUTH).email)}</span>${S.user!==AUTH?`<br>Viewing as ${esc(u.name)} (${ROLES[u.role]})`:`<br>${ROLES[u.role]} · ${esc(u.position)}`}<br><button type="button" class="btn sm ghost" style="margin-top:8px;color:#e2e8f0;border-color:#475569;background:transparent" data-act="signOut">⎋ Sign out</button></div></aside><div class="scrim" data-act="menu"></div>
  <main><header class="top"><button type="button" class="ham" data-act="menu">☰</button><h1>${STAFF.includes(u.role)&&S.view==='dashboard'?'My Home':TITLES[S.view]}</h1>
  <div class="bellw"><button type="button" class="bell" data-act="bell" aria-label="Notifications">🔔${A.length?`<i>${A.length}</i>`:''}</button>${S.bell?`<div class="bellp"><div class="row" style="padding:6px 10px"><b>Notifications</b><span class="sp"></span><span class="small muted">${A.length}</span></div>${A.map(a=>`<div class="it" data-act="go" data-v="${a.v}" data-tab="${a.tab||''}"><span style="font-size:18px">${a.i}</span><div class="small">${esc(a.t)}</div></div>`).join('')||'<div class="empty">You\'re all caught up ✨</div>'}</div>`:''}</div>
- <div class="who"><label>View as</label><select data-chg="role">${Object.entries(ROLES).map(([r,l])=>`<optgroup label="${l}">${grp(r)}</optgroup>`).join('')}</select>${av(u.id)}</div></header>
+ <div class="who">${D.settings.demoSwitch!==false?`<label>Demo: view as</label><select data-chg="role">${Object.entries(ROLES).map(([r,l])=>`<optgroup label="${l}">${grp(r)}</optgroup>`).join('')}</select>`:''}${av(u.id)}</div></header>
  <div class="page">${PAGES[S.view][0]()}</div></main>`;
  PAGES[S.view][1]&&PAGES[S.view][1]();tick();
 }
@@ -1065,7 +1145,7 @@ const ACT={
   {fn:f=>{const k=d.e+'|'+S.attDate;if(f.st==='clear')delete D.att[k];else if(f.st==='absent')D.att[k]={absent:true};else{const o=D.att[k]&&!D.att[k].absent?D.att[k]:{};const bs=toMin(f.in)+240;D.att[k]={...o,in:f.in,mode:f.mode,breaks:+f.brk?[{s:toT(bs),e:toT(bs+ +f.brk)}]:[],...(f.out?{out:f.out}:{}),why:f.why,edited:S.user};if(!f.out)delete D.att[k].out}
    log('Attendance edit',`${emp(d.e).name} ${S.attDate}: ${f.st==='in'?`${f.in}–${f.out||'?'} (${f.mode})`:f.st} — ${f.why}`);toast('Attendance updated')}})},
  leaveNew:()=>{const b=leaveBal(S.user);openModal('File a leave request',`<div class="note" style="margin-bottom:12px">Balance: <b>${b.vl}</b> vacation · <b>${b.sl}</b> sick days</div>${fld('Leave type',`<select name="type">${opts(LEAVE_TYPES)}</select>`)}<div class="f2">${fld('From',`<input type="date" name="from" required value="${rel(1)}">`)}${fld('To',`<input type="date" name="to" required value="${rel(1)}">`)}</div>${fld('Reason',`<textarea name="reason" required></textarea>`)}`,
-  {submit:'Submit request',fn:f=>{if(f.to<f.from){toast('End date must be after start date');return false}const auto=['admin','executive'].includes(role());D.leaves.push({id:uid(),emp:S.user,type:f.type,from:f.from,to:f.to,reason:f.reason,status:auto?'Approved':'Pending',filed:todayStr,...(auto?{by:S.user,decided:todayStr}:{})});log('Leave',`Filed ${f.type} leave ${f.from} to ${f.to}`);toast(auto?'Leave recorded':'Leave request sent for approval')}})},
+  {submit:'Submit request',fn:f=>{if(f.to<f.from){toast('End date must be after start date');return false}const auto=['admin','executive','owner'].includes(role());D.leaves.push({id:uid(),emp:S.user,type:f.type,from:f.from,to:f.to,reason:f.reason,status:auto?'Approved':'Pending',filed:todayStr,...(auto?{by:S.user,decided:todayStr}:{})});log('Leave',`Filed ${f.type} leave ${f.from} to ${f.to}`);toast(auto?'Leave recorded':'Leave request sent for approval')}})},
  reqNew:d=>{const ot=d.k==='Overtime';openModal(ot?'Request overtime approval':'Request attendance correction',ot?`<div class="f2">${fld('Date',`<input type="date" name="date" required value="${todayStr}">`)}${fld('Hours',`<input type="number" step="0.5" min="0.5" max="8" name="hours" required value="1">`)}</div>${fld('Reason / work done',`<textarea name="reason" required></textarea>`)}`
   :`${fld('Date',`<input type="date" name="date" required max="${todayStr}" value="${rel(-1)}">`)}${fld('Correction type',`<select name="sub">${opts(['Missed clock-in','Missed clock-out','Wrong time recorded','Official business','System / device issue'])}</select>`)}<div class="f2">${fld('Correct time in',`<input type="time" name="in">`)}${fld('Correct time out',`<input type="time" name="out">`)}</div>${fld('Reason',`<textarea name="reason" required></textarea>`)}`,
   {submit:'Submit',fn:f=>{D.reqs.push({id:uid(),kind:d.k,emp:S.user,date:f.date,sub:f.sub,in:f.in||'',out:f.out||'',hours:+f.hours||0,reason:f.reason,status:'Pending',filed:todayStr});log('Request',`Filed ${d.k} request for ${f.date}`);toast(d.k+' request sent for approval')}})},
@@ -1086,7 +1166,7 @@ const ACT={
   ${edit?`<details class="mt"><summary style="cursor:pointer;font-weight:600">+ Add a performance review</summary><div class="mt">${fld('Review period',`<input name="period" placeholder="e.g. November 2026 check-in">`)}${fld('Rating',`<select name="rating"><option value="5">★★★★★ Outstanding</option><option value="4">★★★★ Excellent</option><option value="3" selected>★★★ Meets expectations</option><option value="2">★★ Needs improvement</option><option value="1">★ Critical</option></select>`)}${fld('Strengths',`<textarea name="strengths"></textarea>`)}${fld('Areas to improve',`<textarea name="improve"></textarea>`)}</div></details>`:''}`,
   {wide:true,submit:'Save scorecard',fn:edit?f=>{const ch=[];D.kpis[d.e].forEach((k,i)=>{const t=+f['t'+i]||k.target,a=+f['a'+i]||0;if(t!==k.target||a!==k.actual)ch.push(`${k.name}: ${k.actual}→${a}`);k.target=t;k.actual=a});if(ch.length)log('KPI',`${e.name} — ${ch.join('; ')}`);
    if(f.period&&f.period.trim()){D.reviews.push({id:uid(),emp:d.e,by:S.user,date:todayStr,period:f.period,rating:+f.rating,strengths:f.strengths,improve:f.improve});log('Review',`Added ${f.period} review for ${e.name}`)}toast('Scorecard saved')}:null})},
- taskNew:()=>{const T=isMgmt()?team().filter(e=>e.role!=='executive'):[me()];openModal(isMgmt()?'Assign a task':'Add a task',`${fld('Task',`<input name="title" required placeholder="What needs to be done?">`)}${isMgmt()?fld('Assign to',`<select name="emp">${empOpts(T,S.taskEmp!=='all'?S.taskEmp:'')}</select>`):''}<div class="f2">${fld('Due date',`<input type="date" name="due" value="${rel(3)}" required>`)}${fld('Priority',`<select name="priority">${opts(['High','Medium','Low'],'Medium')}</select>`)}</div>${fld('Notes',`<textarea name="notes"></textarea>`)}`,
+ taskNew:()=>{const T=isMgmt()?team().filter(e=>!TOP.includes(e.role)):[me()];openModal(isMgmt()?'Assign a task':'Add a task',`${fld('Task',`<input name="title" required placeholder="What needs to be done?">`)}${isMgmt()?fld('Assign to',`<select name="emp">${empOpts(T,S.taskEmp!=='all'?S.taskEmp:'')}</select>`):''}<div class="f2">${fld('Due date',`<input type="date" name="due" value="${rel(3)}" required>`)}${fld('Priority',`<select name="priority">${opts(['High','Medium','Low'],'Medium')}</select>`)}</div>${fld('Notes',`<textarea name="notes"></textarea>`)}`,
   {submit:isMgmt()?'Assign':'Add',fn:f=>{D.tasks.push({id:uid(),title:f.title,emp:f.emp||S.user,by:S.user,due:f.due,priority:f.priority,status:'todo',notes:f.notes,updates:[]});log('Task',`Assigned "${f.title}" to ${emp(f.emp||S.user).name}`);toast('Task added')}})},
  taskSet:d=>{const t=D.tasks.find(x=>x.id===d.id);t.status=d.s;save();render()},
  taskUpd:d=>{const t=D.tasks.find(x=>x.id===d.id);openModal('Progress update',`<b>${esc(t.title)}</b>${(t.updates||[]).map(u=>`<div class="upd">${fmtShort(u.date)} · ${esc(u.text)} <span class="muted">(${esc(emp(u.by).name)})</span></div>`).join('')}${fld('Update',`<textarea name="u" required placeholder="What's the progress or blocker?"></textarea>`)}`,{fn:f=>{t.updates=t.updates||[];t.updates.push({date:todayStr,by:S.user,text:f.u});if(t.status==='todo')t.status='doing';toast('Update added')}})},
@@ -1094,17 +1174,34 @@ const ACT={
  taskView:d=>{const t=D.tasks.find(x=>x.id===d.id);openModal('Completion evidence',`<b>${esc(t.title)}</b> · ${esc(emp(t.emp).name)}<div class="note mt8">${esc(t.evidence.text||'—')}</div>${t.evidence.photo?`<img class="selfie mt" src="${t.evidence.photo}">`:''}`)},
  taskDel:d=>{const t=D.tasks.find(x=>x.id===d.id);D.tasks=D.tasks.filter(x=>x.id!==d.id);log('Task',`Deleted "${t.title}"`);save();render();toast('Task removed')},
  accompAdd:()=>{const v=$('#acIn').value.trim();if(!v)return toast('Type what you accomplished first');D.accomp.push({id:uid(),emp:S.user,date:todayStr,text:v});save();render();toast('Accomplishment logged ✅')},
- goalNew:()=>{const qEnd=ds(new Date(TODAY.getFullYear(),Math.floor(TODAY.getMonth()/3)*3+3,0));openModal('Set a goal',`${fld('Goal',`<input name="title" required placeholder="Specific & measurable">`)}${fld('Employee',`<select name="emp">${empOpts(team().filter(e=>e.role!=='executive'))}</select>`)}<div class="f2">${fld('Start',`<input type="date" name="start" value="${todayStr}">`)}${fld('Due',`<input type="date" name="due" value="${qEnd}">`)}</div>`,{fn:f=>{D.goals.push({id:uid(),emp:f.emp,title:f.title,start:f.start,due:f.due,progress:0,note:''});log('Goal',`Set goal for ${emp(f.emp).name}: ${f.title}`);toast('Goal set')}})},
+ goalNew:()=>{const qEnd=ds(new Date(TODAY.getFullYear(),Math.floor(TODAY.getMonth()/3)*3+3,0));openModal('Set a goal',`${fld('Goal',`<input name="title" required placeholder="Specific & measurable">`)}${fld('Employee',`<select name="emp">${empOpts(team().filter(e=>!TOP.includes(e.role)))}</select>`)}<div class="f2">${fld('Start',`<input type="date" name="start" value="${todayStr}">`)}${fld('Due',`<input type="date" name="due" value="${qEnd}">`)}</div>`,{fn:f=>{D.goals.push({id:uid(),emp:f.emp,title:f.title,start:f.start,due:f.due,progress:0,note:''});log('Goal',`Set goal for ${emp(f.emp).name}: ${f.title}`);toast('Goal set')}})},
  goalUpd:d=>{const g=D.goals.find(x=>x.id===d.id);openModal('Update goal progress',`<b>${esc(g.title)}</b>${fld('Progress: <span id="pv">'+g.progress+'%</span>',`<input type="range" name="progress" min="0" max="100" step="5" value="${g.progress}" oninput="document.getElementById('pv').textContent=this.value+'%'">`)}${fld('Progress note',`<textarea name="note">${esc(g.note)}</textarea>`)}`,{fn:f=>{g.progress=+f.progress;g.note=f.note;toast('Goal updated')}})},
  accNew:d=>{const T=team().filter(e=>canManage(e.id));if(!T.length)return toast('No one in your scope');const e0=d.e||T[0].id;const i0=d.i||'Tardiness';
   openModal('New coaching record',`<div class="f2">${fld('Employee',`<select name="emp" data-chg="sugg">${empOpts(T,e0)}</select>`)}${fld('Issue',`<select name="issue" data-chg="sugg">${opts(ISSUES,i0)}</select>`)}</div><div class="note" id="sugg" style="margin-bottom:12px"></div>
   <div class="f2">${fld('Record type',`<select name="type">${opts(ACC_TYPES)}</select>`)}${fld('Root cause',`<select name="root">${opts(ROOTS)}</select>`)}</div>${fld('What happened (facts, dates, evidence)',`<textarea name="details" required></textarea>`)}${fld('Agreed actions (support given + expectations)',`<textarea name="plan" required></textarea>`)}<div class="f2">${fld('Improvement target',`<input name="target" placeholder="e.g. Zero lates for 30 days">`)}${fld('Follow-up date',`<input type="date" name="follow" value="${rel(14)}">`)}</div>`,
   {submit:'Save record',fn:f=>{D.acc.push({id:uid(),emp:f.emp,type:f.type,issue:f.issue,root:f.root,target:f.target,date:todayStr,details:f.details,plan:f.plan,follow:f.type==='Commendation'?'':f.follow,status:f.type==='Commendation'?'Closed':'Open',ack:false,by:S.user,updates:[]});log('Coaching',`Logged ${f.type} (${f.issue}) for ${emp(f.emp).name}`);toast('Saved — the employee will be asked to acknowledge')}});updSugg()},
  accUpd:d=>{const a=D.acc.find(x=>x.id===d.id);openModal('Add follow-up',`<b>${esc(emp(a.emp).name)}</b> · ${esc(a.issue)}${a.target?`<div class="small muted">Target: ${esc(a.target)}</div>`:''}${fld('Progress',`<select name="p">${opts(['On track','Improving','No improvement','Worse'])}</select>`)}${fld('Notes',`<textarea name="t" required></textarea>`)}${fld('Next follow-up',`<input type="date" name="f" value="${rel(7)}">`)}`,{fn:f=>{a.updates=a.updates||[];a.updates.push({date:todayStr,by:S.user,prog:f.p,text:f.t});if(f.f)a.follow=f.f;log('Coaching',`Follow-up on ${emp(a.emp).name}: ${f.p}`);toast('Follow-up recorded')}})},
- accAck:d=>{const a=D.acc.find(x=>x.id===d.id);openModal('Acknowledge record',`<div class="note" style="margin-bottom:12px">${chip(a.type,TYC[a.type])} <b>${esc(a.issue)}</b><br>${esc(a.details)}<br><br><b>Agreed actions:</b> ${esc(a.plan)}${a.target?`<br><b>Target:</b> ${esc(a.target)}`:''}</div>${fld('Your comment (optional)',`<textarea name="c" placeholder="Your side, commitments, or questions"></textarea>`)}<div class="small muted">Acknowledging confirms you received and understood this record. It does not necessarily mean you agree.</div>`,{submit:'I acknowledge',fn:f=>{a.ack=true;a.ackOn=todayStr;if(f.c)a.empNote=f.c;log('Coaching',`Acknowledged ${a.type} (${a.issue})`);toast('Acknowledged — thank you')}})},
+ accAck:d=>{const a=D.acc.find(x=>x.id===d.id);const keep=SIG&&SIG.id===a.id?SIG:{id:a.id,c:''};SIG=keep;
+  openModal('Coaching form — sign',`<div class="note" style="margin-bottom:12px">${chip(a.type,TYC[a.type])} <b>${esc(a.issue)}</b> · ${fmtDate(a.date)}<br>${esc(a.details)}<br><br><b>Agreed actions:</b> ${esc(a.plan)}${a.target?`<br><b>Target:</b> ${esc(a.target)}`:''}${a.follow?`<br><b>Follow-up:</b> ${fmtDate(a.follow)}`:''}<br><span class="small muted">Coached by ${esc(emp(a.by).name)}</span></div>${fld('Your comment (optional)',`<textarea name="c" placeholder="Your side, commitments, or questions">${esc(keep.c||'')}</textarea>`)}
+  <div class="fld"><label>Your signature</label><div class="sigwrap"><canvas id="sigPad"></canvas><span class="sighint" id="sigHint">Sign here with your finger</span></div><div class="row mt8"><span class="small muted">Signing confirms you received and understood this record. It does not necessarily mean you agree.</span><span class="sp"></span>${B('Clear','sigClear',{},'sm ghost')}</div></div>`,
+  {submit:'Continue',fn:f=>{if(!SIGPAD||!SIGPAD.drawn){toast('Please sign in the box first');return false}SIG={id:a.id,c:f.c||'',img:SIGPAD.data()};setTimeout(()=>sigConfirm(a.id),0);return false}});sigInit()},
+ sigClear:()=>{if(SIGPAD)SIGPAD.clear()},
+ loginDemo:d=>{LG.email=d.m;LG.msg='';renderLogin();const i=document.querySelector('#loginF input');if(i)i.value=d.m},
+ loginBack:()=>{LG.step='email';LG.msg='';renderLogin()},
+ loginReq:()=>{LG.step='req';LG.msg='';renderLogin()},
+ signOut:()=>{log('Access','Signed out',AUTH);AUTH=null;try{localStorage.removeItem(SKEY)}catch(e){}save();LG.step='email';LG.msg='';LG.email='';S.menu=false;renderLogin()},
+ anScope:d=>{S.anScope=d.k;render()},
+ anCsv:()=>{const T=anList();const sc=canAll()?(S.anScope||'all'):'team';log('Report',`Downloaded team analytics CSV (${sc==='all'?'overall':'my team'}, ${T.length} people, ${S.repDays} days)`);download(`workforce360-${sc==='all'?'company':'team'}-performance-${todayStr}.csv`,toCSV(repRows('scorecard',T)));save()},
+ accSet:d=>{if(!isHRA())return;const e=emp(d.e);e.access=d.v;log('Access',`${d.v==='approved'?'Approved':'Removed'} app access for ${e.name} (${e.email})`);save();render();toast(d.v==='approved'?`${e.name} can now sign in`:`${e.name} can no longer sign in`)},
+ reqDecline:d=>{const x=D.accessReq.find(r=>r.id===d.id);x.status='Declined';x.by=S.user;log('Access',`Declined access request from ${x.email}`);save();render();toast('Request declined')},
+ reqApprove:d=>{const x=D.accessReq.find(r=>r.id===d.id);const m=D.emps.find(e=>(e.email||'').toLowerCase()===x.email);
+  openModal('Approve access',`<div class="note" style="margin-bottom:12px"><b>${esc(x.name)}</b> · ${esc(x.email)}<br><span class="small">${esc(x.note||'')}</span></div>${fld('Link this email to employee',`<select name="e" required><option value="">Choose an employee…</option>${D.emps.filter(e=>e.status==='Active').map(e=>`<option value="${e.id}" ${m&&m.id===e.id?'selected':''}>${esc(e.name)} — ${esc(e.position)}${e.email&&e.email!==x.email?' ('+esc(e.email)+')':''}</option>`).join('')}</select>`)}<div class="small muted">Not in the list yet? Add the employee first (Directory → Add employee), then approve. The employee's email will be set to ${esc(x.email)}.</div>`,
+  {submit:'Approve access',fn:f=>{if(!f.e){toast('Choose an employee');return false}const e=emp(f.e);e.email=x.email;e.access='approved';x.status='Approved';x.by=S.user;x.emp=e.id;log('Access',`Approved access request: ${x.email} → ${e.name}`);toast(`${e.name} can now sign in`)}})},
+ sigAgain:d=>{SIG.img=null;ACT.accAck({id:d.id})},
+ sigSave:d=>{const a=D.acc.find(x=>x.id===d.id);if(!SIG||!SIG.img||a.sig)return;a.ack=true;a.ackOn=todayStr;a.sig=SIG.img;a.sigAt=new Date().toISOString();if(SIG.c)a.empNote=SIG.c;log('Coaching',`Signed ${a.type} (${a.issue}) — final signature`);SIG=null;closeModal();save();render();toast('Signature saved — thank you ✍️')},
  accClose:d=>{const a=D.acc.find(x=>x.id===d.id);openModal('Close case',`${fld('Outcome',`<select name="o"><option>Resolved — target met</option><option>Partially improved — monitor</option><option>Not resolved — escalate</option></select>`)}${fld('Notes',`<textarea name="n"></textarea>`)}`,{submit:'Close case',fn:f=>{a.status='Closed';a.outcome=f.o+(f.n?' — '+f.n:'');log('Coaching',`Closed ${a.type} for ${emp(a.emp).name}: ${f.o}`);toast(f.o.startsWith('Not')?'Closed. Consider the next step on the ladder.':'Case closed')}})},
  award:d=>{const[icon,pts]=AWARDS[d.t];const month=new Date().toLocaleDateString('en-PH',{month:'long'});D.awards.push({id:uid(),emp:d.e,type:d.t,title:d.t==='Employee of the Month'?`${d.t} — ${month}`:d.t,date:todayStr,by:S.user,points:pts,note:''});log('Recognition',`${d.t} → ${emp(d.e).name}`);save();render();toast(`${icon} ${d.t} awarded to ${emp(d.e).name}!`)},
- awardNew:d=>{const T=active().filter(e=>e.role!=='executive'&&(canManage(e.id)));if(!T.length)return toast('No one in your scope');openModal('Give recognition',`${fld('Employee',`<select name="e">${empOpts(T,d.e)}</select>`)}${fld('Badge',`<select name="t">${Object.entries(AWARDS).map(([k,[i,p]])=>`<option value="${k}">${i} ${k} (${p} pts)</option>`).join('')}</select>`)}${fld('Message',`<textarea name="n" required placeholder="What did they do?"></textarea>`)}`,{submit:'Send recognition',fn:f=>{D.awards.push({id:uid(),emp:f.e,type:f.t,title:f.t,date:todayStr,by:S.user,points:AWARDS[f.t][1],note:f.n});log('Recognition',`${f.t} → ${emp(f.e).name}`);toast('Recognition sent 🎉')}})},
+ awardNew:d=>{const T=active().filter(e=>!TOP.includes(e.role)&&(canManage(e.id)));if(!T.length)return toast('No one in your scope');openModal('Give recognition',`${fld('Employee',`<select name="e">${empOpts(T,d.e)}</select>`)}${fld('Badge',`<select name="t">${Object.entries(AWARDS).map(([k,[i,p]])=>`<option value="${k}">${i} ${k} (${p} pts)</option>`).join('')}</select>`)}${fld('Message',`<textarea name="n" required placeholder="What did they do?"></textarea>`)}`,{submit:'Send recognition',fn:f=>{D.awards.push({id:uid(),emp:f.e,type:f.t,title:f.t,date:todayStr,by:S.user,points:AWARDS[f.t][1],note:f.n});log('Recognition',`${f.t} → ${emp(f.e).name}`);toast('Recognition sent 🎉')}})},
  annNew:()=>openModal('Post announcement',`${fld('Title',`<input name="t" required>`)}${fld('Message',`<textarea name="b" required></textarea>`)}<label class="row"><input type="checkbox" name="p"> Pin to top</label>`,{submit:'Post',fn:f=>{D.ann.push({id:uid(),by:S.user,date:todayStr,title:f.t,body:f.b,pinned:f.p==='on'});log('Announcement',f.t);toast('Announcement posted')}}),
  annDel:d=>{D.ann=D.ann.filter(a=>a.id!==d.id);save();render()},
  empView:d=>{if(d.e!==S.user&&canManage(d.e))log('Access',`Viewed profile of ${emp(d.e).name}`);openModal('Employee profile',profile(d.e),{wide:true})},
@@ -1114,14 +1211,14 @@ const ACT={
   <div class="f3">${fld('Shift',`<select name="shift">${D.settings.shifts.map(s=>`<option value="${s.id}" ${s.id===e.shift?'selected':''}>${esc(s.name)} ${s.start}–${s.end}</option>`).join('')}</select>`)}${fld('Rest day',`<select name="restDay">${DOW.map((n,i)=>`<option value="${i}" ${i==e.restDay?'selected':''}>${n}</option>`).join('')}</select>`)}${fld('Employment type',`<select name="empType">${opts(['Regular','Probationary','Contractual','Project-based','Part-time'],e.empType)}</select>`)}</div>
   <div class="f2">${fld('Home branch',`<select name="site">${sites().map(x=>`<option value="${x.id}" ${x.id===e.site?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`)}<label class="row" style="cursor:pointer;margin-top:22px;flex-wrap:nowrap"><input type="checkbox" name="anySite" ${e.anySite?'checked':''}> <span class="small">Can clock in at <b>any branch</b> (roving)</span></label></div>
   <div class="f3">${fld('Date hired',`<input type="date" name="hired" value="${e.hired}">`)}${fld('Status',`<select name="status">${opts(['Active','On leave','Resigned','Terminated','Inactive'],e.status)}</select>`)}</div>
-  <div class="f2">${fld('Email',`<input type="email" name="email" value="${esc(e.email)}">`)}${fld('Mobile',`<input name="phone" value="${esc(e.phone)}">`)}</div>`,
-  {wide:true,fn:f=>{f.restDay=+f.restDay;f.mgr=f.mgr||null;f.anySite=f.anySite==='on';f.location=siteBy(f.site).name;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
+  <div class="f3">${fld('Work email (used to sign in)',`<input type="email" name="email" value="${esc(e.email)}">`)}${fld('App access',`<select name="access">${[['approved','✓ Approved — can sign in'],['pending','Waiting for approval'],['revoked','Removed — cannot sign in']].map(([k,l])=>`<option value="${k}" ${(e.access||'approved')===k?'selected':''}>${l}</option>`).join('')}</select>`)}${fld('Mobile',`<input name="phone" value="${esc(e.phone)}">`)}</div>`,
+  {wide:true,fn:f=>{f.email=(f.email||'').trim().toLowerCase();if(f.email&&D.emps.some(x=>x.id!==d.e&&(x.email||'').toLowerCase()===f.email)){toast('Another employee already uses this email');return false}if(d.e===AUTH&&f.access!=='approved'){toast("You can't remove your own access");return false}if(!f.email)f.access='none';else if(!d.e||emp(d.e).access!==f.access||emp(d.e).email!==f.email)log('Access',`App access for ${f.name}: ${f.access} (${f.email})`);f.restDay=+f.restDay;f.mgr=f.mgr||null;f.anySite=f.anySite==='on';f.location=siteBy(f.site).name;if(d.e){const x=emp(d.e);const dc=x.dept!==f.dept;Object.assign(x,f);if(dc)D.kpis[x.id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));log('Employee',`Updated record of ${x.name}`);toast('Employee updated')}else{const id='e'+uid();D.emps.push({id,...f,color:AVC[D.emps.length%AVC.length]});D.kpis[id]=D.kpiT[f.dept].map(t=>({...t,actual:0}));D.kpiHist[id]=[];log('Employee',`Added ${f.name}`);toast(f.name+' added')}}})},
  csv:d=>{const rows=repRows(d.k);log('Report',`Downloaded ${d.k} report (${S.repDays} days)`);download(`workforce360-${d.k}-${todayStr}.csv`,toCSV(rows))},
  csvCopy:d=>{const t=toCSV(repRows(d.k));navigator.clipboard.writeText(t).then(()=>toast('Copied! Paste into Excel or Google Sheets.'),()=>copyBox(t))},
  swatch:d=>{document.querySelector('[name=brand]').value=d.c;document.documentElement.style.setProperty('--brand',d.c)},
  rowAdd:()=>{RE.n++;$('#reT').insertAdjacentHTML('beforeend',RE.rowH({},RE.n));const el=$('#reT').lastElementChild;el.scrollIntoView({block:'center'});const f=el.querySelector('input,select');if(f)f.focus()},
  rowDel:(d,a)=>a.closest('[data-i]').remove(),
- resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();migrateSites();D.rolesV=2;migrateKpi();seedTargets();S.user='e1';S.view='';toast('Demo data restored')}})
+ resetAsk:()=>openModal('Reset demo data?','<p>This replaces everything with the original sample data.</p>',{submit:'Reset',fn:()=>{D=seed();migrateSites();D.rolesV=2;migrateAccess();migrateKpi();seedTargets();S.user='e1';S.view='';toast('Demo data restored')}})
 };
 let EVP=null;
 function updSugg(){const f=$('#mform');if(!f||!$('#sugg'))return;const s=suggestNext(f.emp.value,f.issue.value);$('#sugg').innerHTML=`💡 Suggested next step: <b>${esc(s.next)}</b> <span class="muted">(${s.prior} prior record${s.prior===1?'':'s'} on this issue in 180 days)</span>`;if(f.issue.value==='Excellent Work')f.type.value='Commendation';else if(f.issue.value==='Development')f.type.value='Coaching';else if(ACC_TYPES.includes(s.next))f.type.value=s.next}
@@ -1131,7 +1228,8 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
 document.addEventListener('change',e=>{
  if(e.target.id==='evIn'){const file=e.target.files[0];if(!file)return;const img=new Image();img.onload=()=>{EVP=snap(img,false);$('#evPrev').innerHTML=`<img class="selfie mt8" src="${EVP}">`};img.src=URL.createObjectURL(file);return}
  const c=e.target.dataset.chg;if(!c)return;
- if(c==='role'){S.user=e.target.value;S.tabs={};S.taskEmp='all';S.view='';S.bell=false;save();render();toast('Now viewing as '+me().name+' ('+ROLES[role()]+')')}
+ if(c==='anF'){const k=e.target.dataset.k;S[k]=k==='repDays'?+e.target.value:e.target.value;render();return}
+ if(c==='role'){if(D.settings.demoSwitch===false)return;S.user=e.target.value;S.tabs={};S.taskEmp='all';S.view='';S.bell=false;save();render();toast('Now viewing as '+me().name+' ('+ROLES[role()]+')')}
  else if(c==='attSite'){S.attSite=e.target.value;render()}
  else if(c==='kioskSite'){S.kioskSite=e.target.value;kioskMin=-1;kioskTick()}
  else if(c==='tgtD'){S.tgtD=e.target.value||todayStr;render()}
@@ -1142,7 +1240,7 @@ document.addEventListener('change',e=>{
 document.addEventListener('input',e=>{const k=e.target.dataset.inp;if(!k)return;const q=e.target.value.toLowerCase();
  if(k==='empSearch')document.querySelectorAll('#empGrid .empcard').forEach(c=>c.style.display=c.dataset.q.includes(q)?'':'none');
  if(k==='auditQ')document.querySelectorAll('#audT tr[data-q]').forEach(r=>r.style.display=r.dataset.q.includes(q)?'':'none')});
-document.addEventListener('submit',e=>{e.preventDefault();
+document.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='loginF'){loginSubmit(e.target);return}
  if(e.target.id==='mform'){const f=Object.fromEntries(new FormData(e.target));if(onSub&&onSub(f)!==false){if(onSub)closeModal();save();render()}}
  else if(e.target.id==='tgtform'){const key=S.tgtP==='day'?S.tgtD:wkStart(S.tgtD);const store=S.tgtP==='day'?D.dtarget:D.wtarget;let n=0;
   e.target.querySelectorAll('input[name]').forEach(inp=>{const[kind,id,i]=inp.name.split('|');const m=metricsOf(id)[+i];if(!m)return;const k=id+'|'+key;
@@ -1150,7 +1248,7 @@ document.addEventListener('submit',e=>{e.preventDefault();
    else if(kind==='a'){const o=D.daily[k]||{};if(inp.value==='')delete o[m.name];else o[m.name]=+inp.value;D.daily[k]=o}});
   log('Targets',`Saved ${S.tgtP==='day'?'daily':'weekly'} targets for ${key} (${n} values)`);save();render();toast('Targets saved ✅')}
  else if(e.target.id==='setform'){const f=Object.fromEntries(new FormData(e.target));const s=D.settings;
-  Object.assign(s,f,{strict:f.strict==='on',alMissed:f.alMissed==='on',alApprovals:f.alApprovals==='on',alTargets:f.alTargets==='on',alOverdue:f.alOverdue==='on'});['lat','lng','radius','grace','otMin','wAtt','wKpi','wTask','vl','sl','retention'].forEach(k=>{if(f[k]!==undefined)s[k]=+f[k]});
+  Object.assign(s,f,{strict:f.strict==='on',alMissed:f.alMissed==='on',alApprovals:f.alApprovals==='on',alTargets:f.alTargets==='on',alOverdue:f.alOverdue==='on',demoSwitch:f.demoSwitch==='on'});['lat','lng','radius','grace','otMin','wAtt','wKpi','wTask','vl','sl','retention'].forEach(k=>{if(f[k]!==undefined)s[k]=+f[k]});
   log('Settings','Updated settings');save();render();toast('Settings saved')}});
 if(!D.tgtSeeded)seedTargets();
 render();
