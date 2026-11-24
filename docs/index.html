@@ -105,6 +105,9 @@ h2{font-size:36px;line-height:1.15;letter-spacing:-.8px;margin:10px 0 12px}
 .plan ul{list-style:none;padding:0;margin:0 0 22px;flex:1}
 .plan li{padding:7px 0 7px 26px;position:relative;font-size:15px;border-bottom:1px solid var(--line)}
 .plan li::before{content:'✓';position:absolute;left:2px;color:var(--brand);font-weight:800}
+.plan .price{margin:0 0 4px}.plan .price b{font-size:32px;letter-spacing:-.5px;color:var(--brand)}.plan .price span{font-size:13.5px;color:var(--muted);margin-left:6px}
+.plan .mo{font-size:15px;margin:0 0 16px;color:var(--ink)}.plan .mo b{font-size:20px}.plan .mo span{display:block;font-size:12.5px;color:var(--muted)}
+.pnote{margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pnote div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted)}.pnote b{color:var(--ink);display:block;margin-bottom:2px}@media(max-width:860px){.pnote{grid-template-columns:1fr}}
 .plan.feat{border:2px solid var(--brand);box-shadow:0 20px 40px #0f766e1f;position:relative}
 .plan.feat::after{content:'Most popular';position:absolute;top:-13px;right:20px;background:var(--brand);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px}
 /* download */
@@ -176,9 +179,9 @@ footer a{color:#cbd5e1}
   <p class="lead">WorkForce360 puts attendance, daily sales reports, targets, KPI scorecards, coaching and recognition in one app. Employees clock in with a selfie, GPS and a liveness check and report their sales before they go home. Owners see every branch from their phone.</p>
   <div class="ctas">
    <a class="btn primary" href="https://github.com/workforce360ph/workforce360ph.github.io/releases/latest/download/Workforce360.apk">⬇ Download for Android</a>
-   <a class="btn ghost" href="app/">Try the web app →</a>
+   <a class="btn ghost" href="app/?tour=1">▶ Watch the 2-minute guided demo</a>
   </div>
-  <div class="note">Free demo with sample data · Sign in with a demo account: Owner, Admin, HR, Manager, Supervisor, OIC, Employee, Driver or Account Manager</div>
+  <div class="note">Or <a href="app/">open the web app</a> and sign in with a demo account: Owner, Admin, HR, Manager, Supervisor, OIC, Employee, Driver or Account Manager</div>
  </div>
  <div class="mock rv">
   <img class="desk shot" src="assets/05_manager_dashboard.jpg" alt="WorkForce360 manager dashboard">
@@ -193,7 +196,7 @@ footer a{color:#cbd5e1}
  <div><i>🎯</i>Daily & weekly targets</div>
  <div><i>📈</i>KPI scorecards</div>
  <div><i>🛡️</i>Coaching & audit trail</div>
- <div><i>🔒</i>Data Privacy Act-ready</div>
+ <div><i>🔒</i>Privacy & security controls</div>
 </div></div>
 
 <section class="alt"><div class="wrap">
@@ -230,6 +233,8 @@ footer a{color:#cbd5e1}
   <div class="card rv"><div class="ico">🔔</div><h3>Alerts & announcements</h3><p>Missed clock-ins, approvals, missed targets and overdue work. Announcements to everyone or chosen departments, with read receipts.</p></div>
   <div class="card rv"><div class="ico">🏛️</div><h3>Executive summary & reports</h3><p>Department comparisons, risk indicators, insights with evidence, and CSV reports for Excel.</p></div>
   <div class="card rv"><div class="ico">📝</div><h3>Daily sales & weekly reports</h3><p>Staff report each sale or order (OR number, units, description, amount) with automatic totals. Leaders send team weekly totals per day.</p></div>
+  <div class="card rv"><div class="ico">📋</div><h3>Payroll attendance summary</h3><p>Per cutoff (1–15, 16–end): hours, lates, undertime, overtime, leave, rest days and holiday hours for each employee, exported to Excel. An attendance summary for your payroll — not a payroll calculator.</p></div>
+  <div class="card rv"><div class="ico">⚖️</div><h3>Scores anyone can explain</h3><p>Every employee sees how their score was calculated — each part, its weight and its points. Managers finalize the rating with a comment; the employee acknowledges it.</p></div>
   <div class="card rv"><div class="ico">🧮</div><h3>Team analytics</h3><p>Owners and managers rank their team — or the whole company — by branch, department and period, and download it as CSV.</p></div>
   <div class="card rv"><div class="ico">🔐</div><h3>Authorized sign-in only</h3><p>Only work emails added by HR and approved by HR or Admin can open the app and web dashboard.</p></div>
   <div class="card rv"><div class="ico">📥</div><h3>Documents at a tap</h3><p>Every download shows a notice — tap it to open the PDF or report right away.</p></div>
@@ -247,6 +252,11 @@ footer a{color:#cbd5e1}
   <div class="txt"><div class="k">Daily log</div><h3>Every punch, with proof, in one table</h3><p>Status, shift, time in and out, breaks, late minutes, undertime and overtime are computed automatically. Filter by branch, fix a missed punch, and every edit goes to the audit trail.</p></div>
   <img class="shot" src="assets/07_attendance_log.jpg" alt="Daily attendance log">
  </div>
+</div></section>
+
+<section style="padding:56px 0;background:linear-gradient(135deg,#0f766e,#0f172a);color:#fff"><div class="wrap" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+ <div style="max-width:680px"><div style="font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#5eead4">Guided demo · 2 minutes</div><h2 style="color:#fff;margin:6px 0 10px;font-size:30px">See one full workday, start to finish</h2><p style="color:#cbd5e1;margin:0">Employee clocks in → submits sales → supervisor reviews → manager checks KPIs → HR downloads the payroll summary → owner sees the whole company. The demo switches accounts for you and explains each step.</p></div>
+ <a class="btn light" href="app/?tour=1" style="font-size:16px;padding:15px 24px">▶ Start the guided demo</a>
 </div></section>
 
 <section><div class="wrap">
@@ -321,17 +331,18 @@ footer a{color:#cbd5e1}
  </div>
  <div class="grid g2" style="margin-top:20px">
   <div class="card rv"><div class="ico">🏢</div><h3>Built for multiple branches</h3><p>Each branch has its own location, radius and QR code. Employees are checked against their home branch; drivers can clock in at any branch.</p></div>
-  <div class="card rv"><div class="ico">🔒</div><h3>Privacy by design</h3><p>Only authorized work emails can sign in. Location and selfie are captured only at clock-in — never continuous tracking. Privacy notice, automatic selfie deletion, role-based access and a full audit trail.</p></div>
+  <div class="card rv"><div class="ico">🔒</div><h3>Privacy by design</h3><p>Only authorized work emails can sign in. Location and selfie are captured only at clock-in — never continuous tracking. Privacy notice, automatic selfie deletion, role-based access and a full audit trail. <a href="privacy.html">How data is handled →</a></p></div>
  </div>
 </div></section>
 
 <section class="alt" id="plans"><div class="wrap">
- <div class="sec-head rv"><div class="k">Plans</div><h2>Pick the size that fits your company</h2><p>Every plan includes setup, your logo and colors, training, hosting, updates and support.</p></div>
+ <div class="sec-head rv"><div class="k">Plans</div><h2>Simple, fixed pricing</h2><p>A one-time setup fee plus a fixed monthly fee. <b>No per-employee fees</b> within your package. Prices in Philippine pesos, exclusive of VAT.</p></div>
  <div class="grid g3">
-  <div class="card plan rv"><h3>Starter</h3><div class="who">Up to 30 employees · 1 branch</div><ul><li>All attendance features</li><li>Daily sales & weekly team reports</li><li>Targets, scorecards & coaching</li><li>Android app + web dashboard</li></ul><a class="btn ghost" href="#contact">Get a quote</a></div>
-  <div class="card plan feat rv"><h3>Business</h3><div class="who">Up to 100 employees · up to 3 branches</div><ul><li>Everything in Starter</li><li>Multi-branch geofencing & QR kiosks</li><li>Executive summary & reports</li><li>Employee data import</li></ul><a class="btn primary" href="#contact">Get a quote</a></div>
-  <div class="card plan rv"><h3>Enterprise</h3><div class="who">100+ employees · unlimited branches</div><ul><li>Everything in Business</li><li>Custom modules & integrations</li><li>AI management insights (add-on)</li><li>Priority support</li></ul><a class="btn ghost" href="#contact">Talk to us</a></div>
+  <div class="card plan rv"><h3>Starter</h3><div class="who">Up to 30 employees · 1 branch</div><div class="price"><b>₱45,000</b><span>one-time setup</span></div><div class="mo"><b>₱4,500</b> / month<span>Hosting, updates and support · billed monthly</span></div><ul><li>All attendance features</li><li>Daily sales & weekly team reports</li><li>Payroll attendance summary</li><li>Targets, scorecards & coaching</li><li>Android app + web dashboard</li></ul><a class="btn ghost" href="#contact">Book a demo</a></div>
+  <div class="card plan feat rv"><h3>Business</h3><div class="who">Up to 100 employees · up to 3 branches</div><div class="price"><b>₱85,000</b><span>one-time setup</span></div><div class="mo"><b>₱8,500</b> / month<span>Hosting, updates and support · billed monthly</span></div><ul><li>Everything in Starter</li><li>Multi-branch geofencing & QR kiosks</li><li>Executive summary & reports</li><li>Employee data import</li></ul><a class="btn primary" href="#contact">Book a demo</a></div>
+  <div class="card plan rv"><h3>Enterprise</h3><div class="who">100+ employees · unlimited branches</div><div class="price"><b>from ₱150,000</b><span>one-time setup</span></div><div class="mo"><b>from ₱15,000</b> / month<span>Quoted for your size and modules</span></div><ul><li>Everything in Business</li><li>Custom modules & integrations</li><li>AI management insights (add-on)</li><li>Priority support</li></ul><a class="btn ghost" href="#contact">Talk to us</a></div>
  </div>
+ <div class="pnote rv"><div><b>Setup includes</b>Your logo, colors and app name · branches and shifts · KPI templates · employee import · training for supervisors, HR and admins</div><div><b>Payment terms</b>50% of setup on signing, 50% on go-live. The monthly fee starts on go-live. Your license to the branded app is perpetual.</div><div><b>Growing past your limit?</b>Move up to the next package when you need more employees or branches. Still no per-employee fees.</div></div>
 </div></section>
 
 <section id="download"><div class="wrap">
@@ -351,7 +362,9 @@ footer a{color:#cbd5e1}
  <details class="rv"><summary>Can employees fake their attendance?</summary><p>It's much harder than with logbooks or a plain app. A live selfie needs head movement, so a printed photo won't pass. GPS must be inside the employee's branch, and the QR option uses a code that changes every minute. Anything unusual is flagged for the manager instead of silently accepted.</p></details>
  <details class="rv"><summary>Does it work with weak or no signal?</summary><p>Yes. The selfie, liveness check, GPS and QR scan all run on the phone itself, so employees can clock in without internet. In the live version, punches made offline are saved on the phone and sync automatically when the signal returns, marked "Recorded offline" for review.</p></details>
  <details class="rv"><summary>We have several branches. Will staff at other branches show as absent or "away"?</summary><p>No. Each branch has its own location and radius, and each employee is checked against their home branch. Roving staff can be allowed at any branch.</p></details>
- <details class="rv"><summary>Is it compliant with the Data Privacy Act?</summary><p>It's designed for it: location and photo are captured only at clock-in, employees see a privacy notice, selfies are deleted automatically, access is by role, and an audit trail records who viewed what. We recommend a review with your privacy officer before go-live.</p></details>
+ <details class="rv"><summary>Is it compliant with the Data Privacy Act?</summary><p>WorkForce360 is designed with privacy and security controls aligned with the Philippine Data Privacy Act, subject to each company's own compliance review. Location and selfie are captured only at clock-in and clock-out, employees acknowledge a privacy notice, selfies are deleted automatically after 90 days, access is by role, and an audit trail records who viewed what. See <a href="privacy.html">Privacy & data handling</a> for what we collect, why, how long it's kept and how deletion works.</p></details>
+ <details class="rv"><summary>Does it compute payroll?</summary><p>No — it prepares the attendance side of payroll. For each cutoff it totals hours worked, late minutes, undertime, overtime (computed and approved), leave, rest days worked and regular or special holiday hours per employee, and exports it to Excel. Your payroll system or accountant applies pay rates, premiums and deductions.</p></details>
+ <details class="rv"><summary>How is an employee's score calculated?</summary><p>The overall score combines attendance, KPI achievement and tasks done on time, each with a weight the company sets (for example 30% · 40% · 30%). KPI achievement is each KPI's actual vs target times its weight, capped at 120%. The band thresholds and evaluation period (monthly or quarterly) are set by HR or Admin, and every employee can see the full breakdown of their own score.</p></details>
  <details class="rv"><summary>How do daily sales reports work?</summary><p>Before going home, each employee lists their sales or orders — OR number (optional), units, description and amount — and the app adds up the totals. Supervisors, OICs and managers send a weekly team report with units and sales per day, filled in from those daily reports. HR and Admin can add the columns or questions your business needs, and everything downloads to Excel.</p></details>
  <details class="rv"><summary>Who can sign in to the app?</summary><p>Only employees whose work email HR has added and HR or Admin has approved. They sign in with a one-time code sent to that email. Anyone else can only send an access request, and removing someone's access signs them out.</p></details>
  <details class="rv"><summary>Can we use our own KPIs, shifts and logo?</summary><p>Yes. KPIs, weights, targets, shifts, holidays, branches, leave credits, colors and company name are all set in Settings — no redesign needed.</p></details>
@@ -368,7 +381,7 @@ footer a{color:#cbd5e1}
 
 <footer><div class="wrap">
  <div><b>WorkForce360</b> by Jessie Cajandab · Attendance, performance & productivity</div>
- <div><a href="mailto:ajcajandab@gmail.com">ajcajandab@gmail.com</a> · <a href="app/">Web app</a> · <a href="#download">Download</a> · <a href="#faq">FAQ</a></div>
+ <div><a href="mailto:ajcajandab@gmail.com">ajcajandab@gmail.com</a> · <a href="app/">Web app</a> · <a href="#download">Download</a> · <a href="#faq">FAQ</a> · <a href="privacy.html">Privacy & data handling</a></div>
 </div></footer>
 
 <div class="lb" id="lb" onclick="this.classList.remove('show')"><img id="lbimg" alt=""></div>
