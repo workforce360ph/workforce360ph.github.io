@@ -559,7 +559,7 @@ const nf=v=>v==null||v===''?'—':(+v).toLocaleString('en-PH',{maximumFractionDi
 function applyBands(){const t=D.settings.bands||[95,85,75,60];t.forEach((v,i)=>BANDS[i][0]=+v)}
 const band=v=>{const b=BANDS.find(b=>v>=b[0]);return[b[1],b[2],b[3]]};
 function scoreParts(id){const s=D.settings,days=evalDays(),a=attSum(id,days),t=taskStats(id),kp=kpiP(id),k=Math.min(kp,100);const tw=(+s.wAtt)+(+s.wKpi)+(+s.wTask)||1;
- const P=[{n:'Attendance',v:a.rate,w:+s.wAtt,how:`${a.present+a.late} of ${a.work} workdays present in the last ${days} days (${a.late} late, ${a.absent} absent, ${a.leave} leave)`},
+ const P=[{n:'Attendance',v:a.rate,w:+s.wAtt,how:`${a.present+a.late} of ${a.work-a.leave} workdays present in the last ${days} days (${a.late} late, ${a.absent} absent${a.leave?`; ${a.leave} approved leave day${a.leave>1?'s':''} not counted against you`:''})`},
   {n:'KPI achievement',v:k,w:+s.wKpi,how:D.settings.evalPeriod==='quarter'?`Average KPI score of the last 3 months (${r0(kp)}%, capped at 100)`:`Weighted KPI score this month (${r0(kp)}%, capped at 100)`},
   {n:'Tasks on time',v:t.rate,w:+s.wTask,how:(()=>{const tt=D.tasks.filter(x=>x.emp===id&&x.due<=todayStr);return tt.length?`${tt.filter(x=>x.status==='done').length} of ${tt.length} tasks due so far are done; ${t.overdue} overdue`:'No tasks due yet — counts as 100%'})()}];
  P.forEach(x=>x.pts=x.v*x.w/tw);const total=sum(P.map(x=>x.pts));return{P,total,tw}}
