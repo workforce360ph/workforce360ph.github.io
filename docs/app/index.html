@@ -483,10 +483,12 @@ const active=()=>D.emps.filter(e=>e.status==='Active');
 const LEADS=['supervisor','oic','manager'];
 function team(){const u=me();
  if(['admin','hr','executive','owner'].includes(u.role))return active().filter(e=>e.id!==u.id||!TOP.includes(u.role));
- if(LEADS.includes(u.role))return active().filter(e=>underOf(e.id,u.id));
+ if(LEADS.includes(u.role))return active().filter(e=>e.mgr===u.id);
  return[u]}
 function canManage(id){const u=me();if(!id||id===u.id)return false;const e=emp(id);
- if(u.role==='admin'||u.role==='hr'||u.role==='owner')return true;if(LEADS.includes(u.role))return underOf(id,u.id);return false}
+ if(u.role==='admin'||u.role==='hr'||u.role==='owner')return true;if(LEADS.includes(u.role))return !!e&&e.mgr===u.id;return false}
+const approverOf=id=>{const e=emp(id),m=e&&e.mgr?emp(e.mgr):null;return m&&m.status==='Active'?m.id:null};
+const canApprove=id=>{const u=me();if(!id||id===u.id)return false;const a=approverOf(id);return a?a===u.id:isHRA()};
 function underOf(id,boss){let e=emp(id),g=0;while(e&&e.mgr&&g++<20){if(e.mgr===boss)return true;e=emp(e.mgr)}return false}
 const canProxy=id=>PROXY_ROLES.includes(role())&&canManage(id);
 const shiftOf=e=>D.settings.shifts.find(s=>s.id===e.shift)||D.settings.shifts[0];
@@ -591,7 +593,7 @@ function flags(id){
 function goalStatus(g){if(g.progress>=100)return['Completed','green'];const s=parseD(g.start),d=parseD(g.due);if(TODAY>d)return['Overdue','red'];const exp=Math.min(1,Math.max(0,(TODAY-s)/(d-s)))*100;if(g.progress>=exp-10)return['On Track','green'];if(g.progress>=exp-25)return['At Risk','amber'];return['Behind','red']}
 function suggestNext(id,issue){const prior=D.acc.filter(a=>a.emp===id&&a.issue===issue&&a.date>=rel(-180)&&LADDER.includes(a.type));if(!prior.length)return{next:'Coaching',prior:0};const mx=Math.max(...prior.map(a=>LADDER.indexOf(a.type)));return{next:mx>=3?'HR review (beyond Final Warning)':LADDER[mx+1],prior:prior.length}}
 const pendingAck=id=>D.acc.filter(a=>a.emp===id&&!a.ack&&a.status==='Open').length;
-const pendingApprovals=()=>[...D.leaves.filter(l=>l.status==='Pending'&&canManage(l.emp)),...D.reqs.filter(q=>q.status==='Pending'&&canManage(q.emp))];
+const pendingApprovals=()=>[...D.leaves.filter(l=>l.status==='Pending'&&canApprove(l.emp)),...D.reqs.filter(q=>q.status==='Pending'&&canApprove(q.emp))];
 const leaveDays=l=>{let n=0;for(let d=parseD(l.from);d<=parseD(l.to);d=addDays(d,1))if(!isRD(emp(l.emp),d)&&!holidayOn(ds(d)))n++;return n};
 function leaveBal(id){const y=String(TODAY.getFullYear());const used=t=>sum(D.leaves.filter(l=>l.emp===id&&l.type===t&&l.status==='Approved'&&l.from.startsWith(y)).map(leaveDays));return{vl:D.settings.vl-used('Vacation'),sl:D.settings.sl-used('Sick')}}
 const points=id=>sum(D.awards.filter(a=>a.emp===id).map(a=>+a.points||0));
@@ -827,16 +829,16 @@ let EODF=null;
 /* ===================== team analytics ===================== *//* ===================== team analytics ===================== */
 function downline(id){const out=[],q=[id];while(q.length){const m=q.shift();D.emps.filter(e=>e.mgr===m&&e.status==='Active').forEach(e=>{if(!out.includes(e)){out.push(e);q.push(e.id)}})}return out}
 const canAll=()=>['owner','executive','admin','hr'].includes(role());
-function anList(){const sc=canAll()?(S.anScope||'all'):'team';let T=(sc==='all'?active():downline(S.user)).filter(e=>!TOP.includes(e.role)&&e.id!==S.user);
+function anList(){const sc=canAll()?(S.anScope||'all'):'team';let T=(sc==='all'?active():(LEADS.includes(role())?team():downline(S.user))).filter(e=>!TOP.includes(e.role)&&e.id!==S.user);
  if(S.anDept&&S.anDept!=='all')T=T.filter(e=>e.dept===S.anDept);if(S.anSite&&S.anSite!=='all')T=T.filter(e=>e.site===S.anSite);return T}
-function pgAnalytics(){const n=S.repDays,T=anList(),sc=canAll()?(S.anScope||'all'):'team';const base=(sc==='all'?active():downline(S.user)).filter(e=>!TOP.includes(e.role));
+function pgAnalytics(){const n=S.repDays,T=anList(),sc=canAll()?(S.anScope||'all'):'team';const base=(sc==='all'?active():(LEADS.includes(role())?team():downline(S.user))).filter(e=>!TOP.includes(e.role));
  const a=T.map(e=>attSum(e.id,n)),P=T.map(e=>({e,a:attSum(e.id,n),k:kpiScore(e.id),t:taskStats(e.id).rate,p:prod(e.id,n)})).sort((x,y)=>y.p-x.p);
  const deps=[...new Set(base.map(e=>e.dept))],st=[...new Set(base.map(e=>e.site))];
  const sel=(k,o,v)=>`<select class="inp" data-chg="anF" data-k="${k}">${o.map(([x,l])=>`<option value="${x}" ${x===v?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
  return`<div class="card"><div class="ansel">${canAll()?`<div class="scope">${[['team','👤 My team'],['all','🏢 Overall company']].map(([k,l])=>`<button type="button" class="${sc===k?'on':''}" data-act="anScope" data-k="${k}">${l}</button>`).join('')}</div>`:`<b>👤 My team</b>`}
   ${sel('anDept',[['all','All departments'],...deps.map(d=>[d,d])],S.anDept||'all')}${sel('anSite',[['all','All branches'],...st.map(x=>[x,shortSite(siteBy(x).name)])],S.anSite||'all')}${sel('repDays',[['7','Last 7 days'],['30','Last 30 days'],['90','Last 90 days']],String(n))}
   <span class="sp"></span>${B('⬇ Download CSV','anCsv',{})}</div>
-  <div class="small muted mt8">${sc==='all'?'Everyone in the company':'Everyone who reports to you, directly or through their managers'} · ${T.length} people</div></div>
+  <div class="small muted mt8">${sc==='all'?'Everyone in the company':(LEADS.includes(role())?'Your direct reports':'Everyone who reports to you, directly or through their managers')} · ${T.length} people</div></div>
  <div class="grid g6 mt">${stat('People',T.length,sc==='all'?'Company':'Your team','👥')}${stat('Attendance',r0(avg(a.map(x=>x.rate)))+'%',`Last ${n} days`,'📅')}${stat('Punctuality',r0(avg(a.map(x=>x.punct)))+'%','On-time arrivals','⏰')}${stat('Avg KPI',r0(avg(P.map(x=>x.k)))+'%','This month','🎯')}${stat('Overall score',r0(avg(P.map(x=>x.p))),'Average','⚡')}${stat('Needs support',P.filter(x=>x.p<75).length,'Score below 75','🚩')}</div>
  <div class="grid g2 mt"><div class="card"><h3>Overall score by department</h3><div class="chartbox"><canvas id="cAnD"></canvas></div></div><div class="card"><h3>Performance bands</h3><div class="chartbox"><canvas id="cBand"></canvas></div></div></div>
  <div class="card mt"><h3>Team performance — ranked</h3><div class="tbl"><table><tr><th>#</th><th>Employee</th><th>Branch</th><th>Attendance</th><th>Punctuality</th><th>Lates</th><th>Absences</th><th>KPI</th><th>Tasks</th><th>EOD</th><th>Overall</th></tr>
@@ -893,7 +895,7 @@ function pgAttendance(){
 const reqButtons=()=>B('+ Leave','leaveNew',{},'ghost sm')+' '+B('+ Correction','reqNew',{k:'Correction'},'ghost sm')+' '+B('+ Overtime','reqNew',{k:'Overtime'},'ghost sm');
 function reqTable(L){L=[...L].sort((a,b)=>(a.status==='Pending'?0:1)-(b.status==='Pending'?0:1)||b.filed.localeCompare(a.filed));
  return`<div class="card"><div class="tbl"><table><tr><th>Employee</th><th>Request</th><th>Date(s)</th><th>Details</th><th>Status</th><th></th></tr>
- ${L.map(x=>{const lv=!x.kind;return`<tr><td>${person(x.emp)}</td><td>${lv?chip(x.type+' leave','purple'):chip(x.kind,x.kind==='Overtime'?'blue':'amber')}</td><td class="nw">${lv?`${fmtShort(x.from)}${x.to!==x.from?' – '+fmtShort(x.to):''} (${leaveDays(x)}d)`:fmtShort(x.date)}</td><td>${lv?'':x.kind==='Overtime'?`<b>${x.hours} hrs</b> · `:`<b>${esc(x.sub)}</b>${x.in?' · in '+fmt12(x.in):''}${x.out?' · out '+fmt12(x.out):''} · `}${esc(x.reason)}${x.note?`<div class="small muted">Note: ${esc(x.note)}</div>`:''}${x.by?`<div class="small muted">${x.status} by ${esc(emp(x.by).name)}</div>`:''}</td><td>${stChip(x.status)}</td><td class="nw">${x.status==='Pending'&&canManage(x.emp)?B('Approve','decide',{id:x.id,s:'Approved'},'sm green')+' '+B('Reject','decide',{id:x.id,s:'Rejected'},'sm ghost'):''}${x.status==='Pending'&&x.emp===S.user?B('Cancel','reqCancel',{id:x.id},'sm ghost'):''}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">No requests.</td></tr>'}</table></div></div>`}
+ ${L.map(x=>{const lv=!x.kind;return`<tr><td>${person(x.emp)}</td><td>${lv?chip(x.type+' leave','purple'):chip(x.kind,x.kind==='Overtime'?'blue':'amber')}</td><td class="nw">${lv?`${fmtShort(x.from)}${x.to!==x.from?' – '+fmtShort(x.to):''} (${leaveDays(x)}d)`:fmtShort(x.date)}</td><td>${lv?'':x.kind==='Overtime'?`<b>${x.hours} hrs</b> · `:`<b>${esc(x.sub)}</b>${x.in?' · in '+fmt12(x.in):''}${x.out?' · out '+fmt12(x.out):''} · `}${esc(x.reason)}${x.note?`<div class="small muted">Note: ${esc(x.note)}</div>`:''}${x.by?`<div class="small muted">${x.status} by ${esc(emp(x.by).name)}</div>`:''}</td><td>${stChip(x.status)}</td><td class="nw">${x.status==='Pending'&&canApprove(x.emp)?B('Approve','decide',{id:x.id,s:'Approved'},'sm green')+' '+B('Reject','decide',{id:x.id,s:'Rejected'},'sm ghost'):x.status==='Pending'&&x.emp!==S.user?`<span class="small muted">Waiting for ${esc(approverOf(x.emp)?emp(approverOf(x.emp)).name.split(' ')[0]:'HR')}</span>`:''}${x.status==='Pending'&&x.emp===S.user?B('Cancel','reqCancel',{id:x.id},'sm ghost'):''}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">No requests.</td></tr>'}</table></div></div>`}
 function scheduleView(L){const days=[...Array(7)].map((_,i)=>rel(i));
  return`<div class="card"><h3>Next 7 days<span class="sp"></span>${isHRA()?B('Edit shifts','shiftEdit',{},'sm ghost'):''}</h3><div class="tbl"><table><tr><th>Employee</th>${days.map(d=>`<th>${fmtDay(d)}</th>`).join('')}</tr>
  ${L.map(e=>`<tr><td>${person(e.id)}</td>${days.map(d=>{const dd=parseD(d),h=holidayOn(d),lv=onLeave(e.id,d),sh=shiftOf(e);return`<td class="small nw">${lv?chip('Leave','purple'):h?chip('🎉 '+h.name.split(' ')[0],'teal'):isRD(e,dd)?chip('Rest day','gray'):`<b>${esc(sh.name)}</b><br><span class="muted">${fmt12(sh.start)}–${fmt12(sh.end)}</span>`}</td>`}).join('')}</tr>`).join('')}</table></div>
@@ -1357,7 +1359,7 @@ const ACT={
  reqNew:d=>{const ot=d.k==='Overtime';openModal(ot?'Request overtime approval':'Request attendance correction',ot?`<div class="f2">${fld('Date',`<input type="date" name="date" required value="${todayStr}">`)}${fld('Hours',`<input type="number" step="0.5" min="0.5" max="8" name="hours" required value="1">`)}</div>${fld('Reason / work done',`<textarea name="reason" required></textarea>`)}`
   :`${fld('Date',`<input type="date" name="date" required max="${todayStr}" value="${rel(-1)}">`)}${fld('Correction type',`<select name="sub">${opts(['Missed clock-in','Missed clock-out','Wrong time recorded','Official business','System / device issue'])}</select>`)}<div class="f2">${fld('Correct time in',`<input type="time" name="in">`)}${fld('Correct time out',`<input type="time" name="out">`)}</div>${fld('Reason',`<textarea name="reason" required></textarea>`)}`,
   {submit:'Submit',fn:f=>{D.reqs.push({id:uid(),kind:d.k,emp:S.user,date:f.date,sub:f.sub,in:f.in||'',out:f.out||'',hours:+f.hours||0,reason:f.reason,status:'Pending',filed:todayStr});log('Request',`Filed ${d.k} request for ${f.date}`);toast(d.k+' request sent for approval')}})},
- decide:d=>{const x=D.leaves.find(l=>l.id===d.id)||D.reqs.find(q=>q.id===d.id);const label=x.kind||x.type+' leave';
+ decide:d=>{const x=D.leaves.find(l=>l.id===d.id)||D.reqs.find(q=>q.id===d.id);if(!canApprove(x.emp))return toast('Only '+(approverOf(x.emp)?emp(approverOf(x.emp)).name:'HR')+' can approve this request');const label=x.kind||x.type+' leave';
   const apply=note=>{x.status=d.s;x.by=S.user;x.decided=todayStr;if(note)x.note=note;
    if(x.kind==='Correction'&&d.s==='Approved'){const k=x.emp+'|'+x.date;const o=D.att[k]&&!D.att[k].absent?D.att[k]:{mode:'Office',breaks:[]};D.att[k]={...o,...(x.in?{in:x.in}:{}),...(x.out?{out:x.out}:{}),edited:S.user,why:'Approved correction: '+x.sub};if(!D.att[k].in)D.att[k].in=shiftOf(emp(x.emp)).start}
    log('Approval',`${d.s} ${label} for ${emp(x.emp).name} (${x.date||x.from})`)};
